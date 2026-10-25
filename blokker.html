@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nevro-Tegning</title>
+    <title>Nevro-Tegning (120 min)</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -11,6 +11,7 @@
             --accent-color: #03dac6;
             --frozen-color: #cf6679;
             --pause-color: #ffb74d;
+            --gold-color: #ffd700;
         }
         body {
             background-color: var(--bg-color);
@@ -20,44 +21,61 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            padding: 20px 0;
             transition: background-color 0.3s;
         }
+        
         /* Hovedmeny */
         #menu-container {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            width: 80%;
-            max-width: 400px;
+            width: 90%;
+            max-width: 450px;
+            overflow-y: auto;
+            padding-bottom: 30px;
         }
         .block-btn {
             background-color: #2c2c2c;
             color: var(--text-color);
             border: 1px solid #444;
-            padding: 20px;
-            font-size: 1.2rem;
+            padding: 15px;
             border-radius: 10px;
             cursor: pointer;
+            text-align: left;
             transition: background-color 0.2s, transform 0.1s;
         }
         .block-btn:hover { background-color: #3d3d3d; }
         .block-btn:active { transform: scale(0.98); }
+        .btn-title { font-size: 1.1rem; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
+        .btn-desc { font-size: 0.9rem; color: #aaa; margin-bottom: 8px; line-height: 1.4; }
+        .btn-pauses { font-size: 0.8rem; color: #888; font-style: italic; }
 
         /* Timer UI */
         #timer-container {
             display: none;
             flex-direction: column;
             align-items: center;
+            width: 90%;
+            max-width: 400px;
         }
         #block-name {
-            font-size: 1.2rem;
-            color: #888;
-            margin-bottom: 10px;
+            font-size: 1.4rem;
+            color: var(--accent-color);
+            margin-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 2px;
+            text-align: center;
+            font-weight: bold;
+        }
+        #block-info-display {
+            font-size: 0.95rem;
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.4;
         }
         #timer-display {
             font-size: 6rem;
@@ -70,25 +88,27 @@
             height: 2.5rem;
             margin-bottom: 40px;
             font-weight: 300;
+            text-align: center;
         }
         
         .controls {
             display: flex;
             gap: 15px;
+            width: 100%;
+            justify-content: center;
         }
         .control-btn {
             border: none;
             padding: 15px 30px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex: 1;
+            max-width: 150px;
         }
-        #pause-btn {
-            background-color: var(--pause-color);
-            color: #000;
-        }
+        #pause-btn { background-color: var(--pause-color); color: #000; }
         #cancel-btn {
             background-color: transparent;
             color: #888;
@@ -101,29 +121,31 @@
         .paused { background-color: #1f1b13 !important; }
         
         #reward-display {
-            font-size: 1.5rem;
-            color: #bb86fc;
-            height: 2rem;
+            font-size: 1.3rem;
+            height: 3rem;
             margin-top: 30px;
             text-align: center;
+            font-weight: bold;
         }
+        .reward-none { color: #888; }
+        .reward-small { color: #bb86fc; }
+        .reward-big { color: var(--gold-color); font-size: 1.5rem !important; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <!-- Hovedmeny -->
     <div id="menu-container">
-        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 30px;">Dagens Økter</h2>
-        <button class="block-btn" onclick="startBlock('Blokk 1: Perspektiv & Form')">Blokk 1: Perspektiv & Form</button>
-        <button class="block-btn" onclick="startBlock('Blokk 2: Kompleks Form')">Blokk 2: Kompleks Form</button>
-        <button class="block-btn" onclick="startBlock('Blokk 3: Anatomi')">Blokk 3: Anatomi</button>
-        <button class="block-btn" onclick="startBlock('Blokk 4: Lys & Skygge')">Blokk 4: Lys & Skygge</button>
+        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 20px;">Dagens Økter (120 min)</h2>
+        <!-- Knappene genereres automatisk via JavaScript -->
+        <div id="menu-buttons"></div>
         <div id="reward-display"></div>
     </div>
 
     <!-- Timer Skjerm -->
     <div id="timer-container">
         <div id="block-name">Blokk Navn</div>
+        <div id="block-info-display">Info om blokken</div>
         <div id="timer-display">20:00</div>
         <div id="status-text">Klar til start</div>
         <div class="controls">
@@ -133,11 +155,18 @@
     </div>
 
     <script>
-        // Innstillinger
-        const ACTIVE_TIME_SEC = 20 * 60; 
-        const PAUSE_TIME_SEC = 10;       
-        const NUM_PAUSES = 8;            
-        const WIN_CHANCE = 0.25;         
+        // Innstillinger for blokkene
+        const blocksConfig = [
+            { id: 1, title: 'Blokk 1: Perspektiv & Form', desc: 'Tegn primitive volumer (bokser, sylindere, kuler) i fri rotasjon. Bruk røntgensyn.', pauses: 10 },
+            { id: 2, title: 'Blokk 2: Anatomi & Konstruksjon', desc: 'Bruk de primitive formene til å bygge forenklede 3D-mannekenger. Fokus på proporsjoner.', pauses: 6 },
+            { id: 3, title: 'Blokk 3: Kryssende & Bøyde former', desc: 'La formene kollidere (f.eks. sylinder gjennom kule) eller deformeres (bøyd boks).', pauses: 5 },
+            { id: 4, title: 'Blokk 4: Lys & Skygge', desc: 'Plasser en tydelig lyskilde og skyggelegg primitive former med skravering.', pauses: 12 },
+            { id: 5, title: 'Blokk 5: Dekonstruksjon', desc: 'Finn en fotoreferanse. Dekonstruer motivet utelukkende til gjennomsiktige 3D-blokker.', pauses: 6 },
+            { id: 6, title: 'Blokk 6: Integrasjon', desc: 'Tegn dynamiske posisjoner fra referanse, bygget bunnsolid opp med 3D-volumer.', pauses: 6 }
+        ];
+
+        const ACTIVE_TIME_SEC = 20 * 60; // 20 minutter
+        const PAUSE_TIME_SEC = 10;       // 10 sekunder
         
         // Tilstandsvariabler
         let activeTimeLeft = ACTIVE_TIME_SEC;
@@ -147,6 +176,20 @@
         let timerInterval = null;
         let pauseTriggers = [];
         let wakeLock = null;
+
+        // Bygg hovedmenyen dynamisk
+        const menuDiv = document.getElementById('menu-buttons');
+        blocksConfig.forEach(block => {
+            const btn = document.createElement('button');
+            btn.className = 'block-btn';
+            btn.onclick = () => startBlock(block);
+            btn.innerHTML = `
+                <div class="btn-title">${block.title}</div>
+                <div class="btn-desc">${block.desc}</div>
+                <div class="btn-pauses">⏱️ Inneholder ${block.pauses} tilfeldige mikropauser</div>
+            `;
+            menuDiv.appendChild(btn);
+        });
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -169,10 +212,13 @@
             playTone(400, 'sine', 0.2, 0.1);
             setTimeout(() => playTone(600, 'sine', 0.4, 0.1), 150);
         }
-        function playWinSound() {
+        function playWinSound(isBig) {
             playTone(400, 'triangle', 0.1, 0.2);
             setTimeout(() => playTone(500, 'triangle', 0.1, 0.2), 100);
             setTimeout(() => playTone(600, 'triangle', 0.4, 0.2), 200);
+            if(isBig) {
+                setTimeout(() => playTone(800, 'triangle', 0.6, 0.2), 400);
+            }
         }
 
         async function requestWakeLock() {
@@ -186,11 +232,14 @@
             }
         }
 
-        function generatePauses() {
+        function generatePauses(numPauses) {
             let pauses = [];
-            while(pauses.length < NUM_PAUSES) {
+            let attempts = 0;
+            // Legger inn en attempts-sperre for å forhindre uendelig loop
+            while(pauses.length < numPauses && attempts < 1000) {
+                attempts++;
                 let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60;
-                let collision = pauses.some(existing => Math.abs(existing - p) < 45);
+                let collision = pauses.some(existing => Math.abs(existing - p) < 45); // Minst 45 sek buffer
                 if(!collision) pauses.push(p);
             }
             return pauses.sort((a, b) => b - a);
@@ -223,20 +272,25 @@
             }
         }
 
-        function startBlock(blockName) {
+        function startBlock(block) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             requestWakeLock();
             
-            document.getElementById('block-name').innerText = blockName;
+            document.getElementById('block-name').innerText = block.title;
+            document.getElementById('block-info-display').innerText = `${block.desc} (${block.pauses} pauser)`;
+            
             document.getElementById('menu-container').style.display = "none";
             document.getElementById('timer-container').style.display = "flex";
-            document.getElementById('reward-display').innerText = "";
+            
+            const rewardDisplay = document.getElementById('reward-display');
+            rewardDisplay.innerText = "";
+            rewardDisplay.className = "";
             
             activeTimeLeft = ACTIVE_TIME_SEC;
             pauseTimeLeft = PAUSE_TIME_SEC;
             isFrozen = false;
             isUserPaused = false;
-            pauseTriggers = generatePauses();
+            pauseTriggers = generatePauses(block.pauses);
             
             updateUI();
             timerInterval = setInterval(tick, 1000);
@@ -267,21 +321,29 @@
             document.getElementById('timer-container').style.display = "none";
             document.getElementById('menu-container').style.display = "flex";
             
-            // Tilbakestill pause-knappen hvis den var satt på pause
             let pauseBtn = document.getElementById('pause-btn');
             pauseBtn.innerText = "Pause";
             pauseBtn.style.backgroundColor = "var(--pause-color)";
         }
 
         function finishBlock() {
-            cancelBlock(); // Deler samme logikk for å rydde opp og gå til menyen
+            cancelBlock(); 
             
-            // Lotteri-logikk kjøres kun ved fullført blokk
-            if(Math.random() < WIN_CHANCE) {
-                playWinSound();
-                document.getElementById('reward-display').innerText = "🎉 DU VANT EN BELØNNING! 🎉";
+            // Lotteri (1% stor premie, 20% liten premie)
+            const rand = Math.random();
+            const rewardDisplay = document.getElementById('reward-display');
+            
+            if(rand <= 0.01) {
+                playWinSound(true);
+                rewardDisplay.innerText = "🏆 DU VANT EN STOR PREMIE! 🏆";
+                rewardDisplay.className = "reward-big";
+            } else if(rand <= 0.21) {
+                playWinSound(false);
+                rewardDisplay.innerText = "🎉 DU VANT EN LITEN PREMIE! 🎉";
+                rewardDisplay.className = "reward-small";
             } else {
-                document.getElementById('reward-display').innerText = "Ingen belønning denne gangen.";
+                rewardDisplay.innerText = "Ingen belønning denne gangen.";
+                rewardDisplay.className = "reward-none";
             }
         }
 
