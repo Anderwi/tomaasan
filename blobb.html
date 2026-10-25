@@ -207,33 +207,39 @@
 
         /* --- LANDSKAPSMODUS (SIDELENGS MOBIL) --- */
         @media (orientation: landscape) {
-            body { padding: 10px 0; }
+            body { padding: 5px 0; justify-content: flex-start; } /* Fjerner unødvendig luft på toppen */
             #timer-container {
-                max-width: 95%; /* Utnytt bredden bedre */
+                max-width: 98%; /* Lar containeren bruke nesten hele skjermbredden */
             }
             #reference-image-container {
-                height: 60vh; /* Bildet tar 60% av skjermhøyden */
+                height: 80vh; /* Økt fra 60vh til 80vh for at bildet kan bli mye større */
                 margin: 5px 0;
             }
             #reference-image {
-                object-fit: contain; /* Sørger for at hele bildet vises, ingenting kuttes bort */
+                object-fit: contain; 
             }
             #timer-display {
-                font-size: 3rem; /* Mindre klokke for å spare plass */
+                font-size: 2.5rem; /* Krymper klokken litt ekstra for å gi bildet all plass */
                 margin: 5px 0;
             }
             #status-text {
                 font-size: 1.2rem;
-                margin-bottom: 15px;
+                margin-bottom: 10px;
+                height: 1.5rem;
             }
             .controls {
                 gap: 5px;
             }
             .control-btn {
-                padding: 10px 15px;
+                padding: 8px 15px;
+                font-size: 0.9rem;
             }
             #block-name {
                 font-size: 1.1rem;
+                margin-top: 5px;
+            }
+            #block-info-display {
+                margin-bottom: 5px;
             }
         }
     </style>
@@ -252,7 +258,7 @@
         <div id="block-name">Blokk Navn</div>
         <div id="block-info-display">Info om blokken</div>
         
-        <!-- Bilde-container med klikk-funksjon, men uten synlig tekst-hint -->
+        <!-- Bilde-container med klikk-funksjon -->
         <div id="reference-image-container" onclick="changeImage()">
             <img id="reference-image" src="" alt="Fotoreferanse">
         </div>
@@ -272,7 +278,6 @@
         const PAUSE_TIME_SEC = 10;
         const TWIST_CHANCE = 0.05; 
         
-        // Oppdaterte, mer utfyllende beskrivelser
         const blocksConfig = [
             { id: 1, title: 'Blokk 1: Perspektiv & Form', desc: 'Tegn primitive volumer (bokser, sylindere, kuler) i fri rotasjon. Bruk "røntgensyn" for å tegne tvers gjennom formene og forstå den skjulte 3D-strukturen.', pauses: 10, twistName: 'Blekkgrensen', twistDesc: 'Maks 10 streker per form.', usePhoto: false },
             { id: 2, title: 'Blokk 2: Anatomi & Konstruksjon', desc: 'Bruk de primitive formene til å bygge forenklede 3D-mannekenger. Fokuser utelukkende på proporsjoner (lengde/bredde-forhold) og unngå alle detaljer.', pauses: 6, twistName: 'Continuous Line', twistDesc: 'Ikke løft pennen fra arket!', usePhoto: false },
@@ -389,7 +394,6 @@
             document.getElementById('block-info-display').innerHTML = `<strong>Nødbrems aktivert:</strong><br><br>${randomTask}`;
         }
 
-        // Henter et nytt bilde når brukeren trykker på det
         function changeImage() {
             const imgEl = document.getElementById('reference-image');
             imgEl.src = `https://picsum.photos/600/400?random=${Date.now()}`;
@@ -400,8 +404,6 @@
             requestWakeLock();
             
             document.getElementById('block-name').innerText = block.title;
-            
-            // Beholder den utfyllende beskrivelsen også underveis
             document.getElementById('block-info-display').innerText = `${block.desc}`;
             
             const imgContainer = document.getElementById('reference-image-container');
