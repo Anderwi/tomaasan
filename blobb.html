@@ -31,6 +31,7 @@
             transition: background-color 0.5s ease;
         }
         
+        /* Hovedmeny */
         #menu-container {
             display: flex;
             flex-direction: column;
@@ -40,6 +41,15 @@
             overflow-y: auto;
             padding-bottom: 30px;
         }
+        
+        /* Grid-system for å tvinge alle knapper til nøyaktig lik høyde */
+        #menu-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-auto-rows: 1fr; 
+            gap: 15px;
+        }
+        
         .block-btn {
             background-color: #2c2c2c;
             color: var(--text-color);
@@ -49,13 +59,18 @@
             cursor: pointer;
             text-align: left;
             transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100%; /* Fyller hele grid-cellen */
         }
         .block-btn:hover { background-color: #3d3d3d; }
         .block-btn:active { transform: scale(0.98); }
         .btn-title { font-size: 1.1rem; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
-        .btn-desc { font-size: 0.9rem; color: #aaa; margin-bottom: 8px; line-height: 1.4; }
-        .btn-pauses { font-size: 0.8rem; color: #888; font-style: italic; }
+        .btn-desc { font-size: 0.9rem; color: #aaa; margin-bottom: 8px; line-height: 1.4; flex-grow: 1; }
+        .btn-pauses { font-size: 0.8rem; color: #888; font-style: italic; margin-top: auto; }
 
+        /* Timer UI */
         #timer-container {
             display: none;
             flex-direction: column;
@@ -83,6 +98,7 @@
         /* Fotoreferanse Styling */
         #reference-image-container {
             display: none;
+            position: relative;
             width: 100%;
             height: 200px;
             margin: 10px 0;
@@ -90,6 +106,7 @@
             overflow: hidden;
             border: 2px solid #444;
             background-color: #000;
+            cursor: pointer; /* Viser at den kan trykkes på */
         }
         #reference-image {
             width: 100%;
@@ -99,6 +116,17 @@
         }
         .upside-down {
             transform: rotate(180deg);
+        }
+        .image-hint {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            pointer-events: none; /* Lar klikket gå gjennom til bildet */
         }
         
         #twist-alert {
@@ -204,254 +232,5 @@
         <div id="block-name">Blokk Navn</div>
         <div id="block-info-display">Info om blokken</div>
         
-        <!-- Bilde-container -->
-        <div id="reference-image-container">
-            <img id="reference-image" src="" alt="Fotoreferanse">
-        </div>
-        
-        <div id="twist-alert"></div>
-        <div id="timer-display">17:00</div>
-        <div id="status-text">Klar til start</div>
-        <div class="controls">
-            <button id="pause-btn" class="control-btn" onclick="togglePause()">Pause</button>
-            <button id="emergency-btn" class="control-btn" onclick="triggerEmergency()">Nødbrems</button>
-            <button id="cancel-btn" class="control-btn" onclick="cancelBlock()">Avbryt</button>
-        </div>
-    </div>
-
-    <script>
-        const ACTIVE_TIME_SEC = 17 * 60; 
-        const PAUSE_TIME_SEC = 10;
-        const TWIST_CHANCE = 0.05; 
-        
-        // La til egenskapen "usePhoto: true" på de blokkene som trenger referanse
-        const blocksConfig = [
-            { id: 1, title: 'Blokk 1: Perspektiv & Form', desc: 'Tegn primitive volumer i fri rotasjon. Bruk røntgensyn.', pauses: 10, twistName: 'Blekkgrensen', twistDesc: 'Maks 10 streker per form.', usePhoto: false },
-            { id: 2, title: 'Blokk 2: Anatomi & Konstruksjon', desc: 'Bygg forenklede 3D-mannekenger. Fokus på proporsjoner.', pauses: 6, twistName: 'Continuous Line', twistDesc: 'Ikke løft pennen fra arket!', usePhoto: false },
-            { id: 3, title: 'Blokk 3: Kryssende & Bøyde former', desc: 'La formene kollidere eller deformeres.', pauses: 5, twistName: 'Skuldergrepet', twistDesc: 'Hold pennen ytterst på skaftet.', usePhoto: false },
-            { id: 4, title: 'Blokk 4: Lys & Skygge', desc: 'Skyggelegg primitive former med skravering.', pauses: 12, twistName: 'Svevende skravering', twistDesc: 'Konstant skraveringsbevegelse.', usePhoto: false },
-            { id: 5, title: 'Blokk 5: Dekonstruksjon', desc: 'Dekonstruer motivet utelukkende til gjennomsiktige 3D-blokker.', pauses: 6, twistName: 'Omvendt referanse', twistDesc: 'Tegn referansen opp-ned!', usePhoto: true },
-            { id: 6, title: 'Blokk 6: Integrasjon', desc: 'Tegn dynamiske posisjoner fra referanse, bygget opp med 3D-volumer.', pauses: 6, twistName: 'Blind form', twistDesc: 'Se kun på referansen, aldri på arket!', usePhoto: true }
-        ];
-
-        const emergencyTasks = [
-            "GHOSTING: Utfør bevegelsen i luften 3-4 ganger over arket.",
-            "PUNKT-TIL-PUNKT: Sett to små prikker, forbind dem rolig.",
-            "STORE FORMER: Tegn dobbelt så stort for å bruke skulderen."
-        ];
-        
-        let activeTimeLeft = ACTIVE_TIME_SEC;
-        let pauseTimeLeft = PAUSE_TIME_SEC;
-        let isFrozen = false;
-        let isUserPaused = false;
-        let isEmergencyMode = false;
-        let timerInterval = null;
-        let pauseTriggers = [];
-        let wakeLock = null;
-
-        const menuDiv = document.getElementById('menu-buttons');
-        blocksConfig.forEach(block => {
-            const btn = document.createElement('button');
-            btn.className = 'block-btn';
-            btn.onclick = () => startBlock(block);
-            btn.innerHTML = `
-                <div class="btn-title">${block.title}</div>
-                <div class="btn-desc">${block.desc}</div>
-                <div class="btn-pauses">⏱️ ${block.pauses} pauser ${block.usePhoto ? '🖼️ m/ foto' : ''}</div>
-            `;
-            menuDiv.appendChild(btn);
-        });
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playTone(freq, type, duration, vol=0.1) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        function playStopSound() { playTone(800, 'square', 0.3, 0.1); }
-        function playStartSound() { playTone(400, 'sine', 0.2, 0.1); setTimeout(() => playTone(600, 'sine', 0.4, 0.1), 150); }
-        function playWinSound(isBig) { playTone(400, 'triangle', 0.1, 0.2); setTimeout(() => playTone(500, 'triangle', 0.1, 0.2), 100); setTimeout(() => playTone(600, 'triangle', 0.4, 0.2), 200); if(isBig) setTimeout(() => playTone(800, 'triangle', 0.6, 0.2), 400); }
-        function playTwistSound() { playTone(300, 'sawtooth', 0.3, 0.15); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.15), 300); }
-        function playEmergencySound() { playTone(200, 'sine', 0.8, 0.1); }
-
-        async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
-        function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
-
-        function generatePauses(numPauses) {
-            let pauses = [];
-            let attempts = 0;
-            while(pauses.length < numPauses && attempts < 1000) {
-                attempts++;
-                let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60;
-                if(!pauses.some(existing => Math.abs(existing - p) < 45)) pauses.push(p);
-            }
-            return pauses.sort((a, b) => b - a);
-        }
-
-        function formatTime(seconds) {
-            let m = Math.floor(seconds / 60).toString().padStart(2, '0');
-            let s = (seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
-
-        function updateUI() {
-            if (isUserPaused) {
-                document.getElementById('status-text').innerText = "Satt på pause";
-                document.body.classList.add('paused');
-                document.body.classList.remove('frozen');
-                return;
-            }
-            document.body.classList.remove('paused');
-            
-            if(isFrozen) {
-                document.getElementById('timer-display').innerText = `00:${pauseTimeLeft.toString().padStart(2, '0')}`;
-                document.getElementById('status-text').innerText = "SLIPP PENNEN!";
-                document.body.classList.add('frozen');
-            } else {
-                document.getElementById('timer-display').innerText = formatTime(activeTimeLeft);
-                document.getElementById('status-text').innerText = "Tegn!";
-                document.body.classList.remove('frozen');
-            }
-        }
-
-        function triggerEmergency() {
-            if(isEmergencyMode) return;
-            isEmergencyMode = true;
-            playEmergencySound();
-            
-            document.body.classList.remove('twist-active');
-            document.body.classList.add('emergency-mode');
-            
-            document.getElementById('twist-alert').style.display = "none";
-            document.getElementById('emergency-btn').style.display = "none";
-            // Skjuler også bildet under nedkjøling for å fjerne inntrykk
-            document.getElementById('reference-image-container').style.display = "none";
-            
-            document.getElementById('block-name').innerText = "Kognitiv Cool-Down";
-            const randomTask = emergencyTasks[Math.floor(Math.random() * emergencyTasks.length)];
-            document.getElementById('block-info-display').innerHTML = `<strong>Nødbrems aktivert:</strong><br><br>${randomTask}`;
-        }
-
-        function startBlock(block) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            requestWakeLock();
-            
-            document.getElementById('block-name').innerText = block.title;
-            document.getElementById('block-info-display').innerText = `${block.desc} (${block.pauses} pauser)`;
-            
-            // Håndtering av bilde
-            const imgContainer = document.getElementById('reference-image-container');
-            const imgEl = document.getElementById('reference-image');
-            imgEl.classList.remove('upside-down'); // Nullstill bilde-rotasjon
-            
-            if (block.usePhoto) {
-                imgContainer.style.display = "block";
-                // Laster et helt nytt bilde for hver gang ved hjelp av dato-koden
-                imgEl.src = `https://picsum.photos/600/400?random=${Date.now()}`;
-            } else {
-                imgContainer.style.display = "none";
-                imgEl.src = "";
-            }
-
-            const twistAlert = document.getElementById('twist-alert');
-            if (Math.random() < TWIST_CHANCE) {
-                document.body.classList.add('twist-active');
-                twistAlert.style.display = "block";
-                twistAlert.innerHTML = `⚠️ <strong>EKSTRA UTFORDRING: ${block.twistName}</strong><br>${block.twistDesc}`;
-                
-                // Hvis vrien er opp-ned, roter bildet
-                if(block.twistName === 'Omvendt referanse') {
-                    imgEl.classList.add('upside-down');
-                }
-                setTimeout(() => playTwistSound(), 100);
-            } else {
-                document.body.classList.remove('twist-active');
-                twistAlert.style.display = "none";
-            }
-            
-            document.getElementById('menu-container').style.display = "none";
-            document.getElementById('timer-container').style.display = "flex";
-            document.getElementById('reward-display').innerText = "";
-            document.getElementById('emergency-btn').style.display = "block";
-            
-            activeTimeLeft = ACTIVE_TIME_SEC;
-            pauseTimeLeft = PAUSE_TIME_SEC;
-            isFrozen = false;
-            isUserPaused = false;
-            isEmergencyMode = false;
-            pauseTriggers = generatePauses(block.pauses);
-            
-            updateUI();
-            timerInterval = setInterval(tick, 1000);
-        }
-
-        function togglePause() {
-            isUserPaused = !isUserPaused;
-            let pauseBtn = document.getElementById('pause-btn');
-            
-            if (isUserPaused) {
-                clearInterval(timerInterval);
-                releaseWakeLock();
-                pauseBtn.innerText = "Gjenoppta";
-                pauseBtn.style.backgroundColor = "var(--accent-color)";
-            } else {
-                requestWakeLock();
-                pauseBtn.innerText = "Pause";
-                pauseBtn.style.backgroundColor = "var(--pause-color)";
-                timerInterval = setInterval(tick, 1000);
-            }
-            updateUI();
-        }
-
-        function resetAppUI() {
-            clearInterval(timerInterval);
-            releaseWakeLock();
-            document.body.classList.remove('frozen', 'paused', 'twist-active', 'emergency-mode');
-            isEmergencyMode = false;
-            
-            document.getElementById('reference-image-container').style.display = "none";
-            document.getElementById('twist-alert').style.display = "none";
-            document.getElementById('timer-container').style.display = "none";
-            document.getElementById('menu-container').style.display = "flex";
-            
-            let pauseBtn = document.getElementById('pause-btn');
-            pauseBtn.innerText = "Pause";
-            pauseBtn.style.backgroundColor = "var(--pause-color)";
-        }
-
-        function cancelBlock() { resetAppUI(); }
-
-        function finishBlock() {
-            resetAppUI(); 
-            const rand = Math.random();
-            const rewardDisplay = document.getElementById('reward-display');
-            if(rand <= 0.01) { playWinSound(true); rewardDisplay.innerText = "🏆 DU VANT EN STOR PREMIE! 🏆"; rewardDisplay.className = "reward-big"; } 
-            else if(rand <= 0.21) { playWinSound(false); rewardDisplay.innerText = "🎉 DU VANT EN LITEN PREMIE! 🎉"; rewardDisplay.className = "reward-small"; } 
-            else { rewardDisplay.innerText = "Ingen belønning denne gangen."; rewardDisplay.className = "reward-none"; }
-        }
-
-        function tick() {
-            if(isFrozen) {
-                pauseTimeLeft--;
-                if(pauseTimeLeft <= 0) { isFrozen = false; pauseTimeLeft = PAUSE_TIME_SEC; playStartSound(); }
-            } else {
-                activeTimeLeft--;
-                if(pauseTriggers.length > 0 && activeTimeLeft === pauseTriggers[0]) {
-                    pauseTriggers.shift(); isFrozen = true; playStopSound();
-                } else if(activeTimeLeft <= 0) { finishBlock(); }
-            }
-            updateUI();
-        }
-    </script>
-</body>
-</html>
+        <!-- Bilde-container med klikk-funksjon -->
+        <div id="reference-image-container" onclick="
