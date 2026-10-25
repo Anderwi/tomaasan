@@ -42,7 +42,6 @@
             padding-bottom: 30px;
         }
         
-        /* Grid-system for å tvinge alle knapper til nøyaktig lik høyde */
         #menu-buttons {
             display: grid;
             grid-template-columns: 1fr;
@@ -62,12 +61,12 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
-            height: 100%; /* Fyller hele grid-cellen */
+            height: 100%; 
         }
         .block-btn:hover { background-color: #3d3d3d; }
         .block-btn:active { transform: scale(0.98); }
         .btn-title { font-size: 1.1rem; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
-        .btn-desc { font-size: 0.9rem; color: #aaa; margin-bottom: 8px; line-height: 1.4; flex-grow: 1; }
+        .btn-desc { font-size: 0.95rem; color: #aaa; margin-bottom: 12px; line-height: 1.5; flex-grow: 1; }
         .btn-pauses { font-size: 0.8rem; color: #888; font-style: italic; margin-top: auto; }
 
         /* Timer UI */
@@ -95,18 +94,18 @@
             line-height: 1.4;
         }
 
-        /* Fotoreferanse Styling */
+        /* Fotoreferanse Styling (Portrettmodus) */
         #reference-image-container {
             display: none;
             position: relative;
             width: 100%;
-            height: 200px;
+            height: 250px;
             margin: 10px 0;
             border-radius: 8px;
             overflow: hidden;
             border: 2px solid #444;
             background-color: #000;
-            cursor: pointer; /* Viser at den kan trykkes på */
+            cursor: pointer; 
         }
         #reference-image {
             width: 100%;
@@ -116,17 +115,6 @@
         }
         .upside-down {
             transform: rotate(180deg);
-        }
-        .image-hint {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            background: rgba(0,0,0,0.6);
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            pointer-events: none; /* Lar klikket gå gjennom til bildet */
         }
         
         #twist-alert {
@@ -216,6 +204,38 @@
         .reward-none { color: #888; }
         .reward-small { color: #bb86fc; }
         .reward-big { color: var(--gold-color); font-size: 1.5rem !important; text-transform: uppercase; }
+
+        /* --- LANDSKAPSMODUS (SIDELENGS MOBIL) --- */
+        @media (orientation: landscape) {
+            body { padding: 10px 0; }
+            #timer-container {
+                max-width: 95%; /* Utnytt bredden bedre */
+            }
+            #reference-image-container {
+                height: 60vh; /* Bildet tar 60% av skjermhøyden */
+                margin: 5px 0;
+            }
+            #reference-image {
+                object-fit: contain; /* Sørger for at hele bildet vises, ingenting kuttes bort */
+            }
+            #timer-display {
+                font-size: 3rem; /* Mindre klokke for å spare plass */
+                margin: 5px 0;
+            }
+            #status-text {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+            .controls {
+                gap: 5px;
+            }
+            .control-btn {
+                padding: 10px 15px;
+            }
+            #block-name {
+                font-size: 1.1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -232,10 +252,9 @@
         <div id="block-name">Blokk Navn</div>
         <div id="block-info-display">Info om blokken</div>
         
-        <!-- Bilde-container med klikk-funksjon -->
+        <!-- Bilde-container med klikk-funksjon, men uten synlig tekst-hint -->
         <div id="reference-image-container" onclick="changeImage()">
             <img id="reference-image" src="" alt="Fotoreferanse">
-          <!--  <div class="image-hint">🔄 Trykk for nytt bilde</div>  -->
         </div>
         
         <div id="twist-alert"></div>
@@ -253,19 +272,20 @@
         const PAUSE_TIME_SEC = 10;
         const TWIST_CHANCE = 0.05; 
         
+        // Oppdaterte, mer utfyllende beskrivelser
         const blocksConfig = [
-            { id: 1, title: 'Blokk 1: Perspektiv & Form', desc: 'Tegn primitive volumer i fri rotasjon. Bruk røntgensyn.', pauses: 10, twistName: 'Blekkgrensen', twistDesc: 'Maks 10 streker per form.', usePhoto: false },
-            { id: 2, title: 'Blokk 2: Anatomi & Konstruksjon', desc: 'Bygg forenklede 3D-mannekenger. Fokus på proporsjoner.', pauses: 6, twistName: 'Continuous Line', twistDesc: 'Ikke løft pennen fra arket!', usePhoto: false },
-            { id: 3, title: 'Blokk 3: Kryssende & Bøyde former', desc: 'La formene kollidere eller deformeres.', pauses: 5, twistName: 'Skuldergrepet', twistDesc: 'Hold pennen ytterst på skaftet.', usePhoto: false },
-            { id: 4, title: 'Blokk 4: Lys & Skygge', desc: 'Skyggelegg primitive former med skravering.', pauses: 12, twistName: 'Svevende skravering', twistDesc: 'Konstant skraveringsbevegelse.', usePhoto: false },
-            { id: 5, title: 'Blokk 5: Dekonstruksjon', desc: 'Dekonstruer motivet utelukkende til gjennomsiktige 3D-blokker.', pauses: 6, twistName: 'Omvendt referanse', twistDesc: 'Tegn referansen opp-ned!', usePhoto: true },
-            { id: 6, title: 'Blokk 6: Integrasjon', desc: 'Tegn dynamiske posisjoner fra referanse, bygget opp med 3D-volumer.', pauses: 6, twistName: 'Blind form', twistDesc: 'Se kun på referansen, aldri på arket!', usePhoto: true }
+            { id: 1, title: 'Blokk 1: Perspektiv & Form', desc: 'Tegn primitive volumer (bokser, sylindere, kuler) i fri rotasjon. Bruk "røntgensyn" for å tegne tvers gjennom formene og forstå den skjulte 3D-strukturen.', pauses: 10, twistName: 'Blekkgrensen', twistDesc: 'Maks 10 streker per form.', usePhoto: false },
+            { id: 2, title: 'Blokk 2: Anatomi & Konstruksjon', desc: 'Bruk de primitive formene til å bygge forenklede 3D-mannekenger. Fokuser utelukkende på proporsjoner (lengde/bredde-forhold) og unngå alle detaljer.', pauses: 6, twistName: 'Continuous Line', twistDesc: 'Ikke løft pennen fra arket!', usePhoto: false },
+            { id: 3, title: 'Blokk 3: Kryssende & Bøyde former', desc: 'La formene kollidere (f.eks. sylinder gjennom kule) eller deformeres (bøyd boks). Fokuser intenst på skjæringslinjene der volumene møtes.', pauses: 5, twistName: 'Skuldergrepet', twistDesc: 'Hold pennen ytterst på skaftet.', usePhoto: false },
+            { id: 4, title: 'Blokk 4: Lys & Skygge', desc: 'Plasser en tydelig lyskilde. Bruk skravering til å bygge volum, med fokus på overgangen mellom lys og skygge (terminator-linjen), kjerneskygge og kastet skygge.', pauses: 12, twistName: 'Svevende skravering', twistDesc: 'Konstant skraveringsbevegelse.', usePhoto: false },
+            { id: 5, title: 'Blokk 5: Dekonstruksjon', desc: 'Bruk fotoreferansen. Ignorer tekstur og lokale farger. Dekonstruer motivet utelukkende til gjennomsiktige, harde 3D-blokker og sylindere.', pauses: 6, twistName: 'Omvendt referanse', twistDesc: 'Tegn referansen opp-ned!', usePhoto: true },
+            { id: 6, title: 'Blokk 6: Integrasjon', desc: 'Tegn dynamiske posisjoner fra referansebildet. Fang bevegelsen (gesture) først, og bygg deretter opp den underliggende, bunnsolide 3D-anatomien over den.', pauses: 6, twistName: 'Blind form', twistDesc: 'Se kun på referansen, aldri på arket!', usePhoto: true }
         ];
 
         const emergencyTasks = [
             "GHOSTING: Utfør bevegelsen i luften 3-4 ganger over arket før pennen treffer.",
             "PUNKT-TIL-PUNKT: Sett to små prikker, forbind dem rolig og selvsikkert.",
-            "STORE FORMER: Tegn dobbelt så stort for å tvinge frem skulderbruk."
+            "STORE FORMER: Tegn dobbelt så stort for å tvinge frem bruk av skuldermuskelen."
         ];
         
         let activeTimeLeft = ACTIVE_TIME_SEC;
@@ -369,7 +389,7 @@
             document.getElementById('block-info-display').innerHTML = `<strong>Nødbrems aktivert:</strong><br><br>${randomTask}`;
         }
 
-        // Bytter ut bildet med et nytt et når du trykker på det
+        // Henter et nytt bilde når brukeren trykker på det
         function changeImage() {
             const imgEl = document.getElementById('reference-image');
             imgEl.src = `https://picsum.photos/600/400?random=${Date.now()}`;
@@ -380,7 +400,9 @@
             requestWakeLock();
             
             document.getElementById('block-name').innerText = block.title;
-            document.getElementById('block-info-display').innerText = `${block.desc} (${block.pauses} pauser)`;
+            
+            // Beholder den utfyllende beskrivelsen også underveis
+            document.getElementById('block-info-display').innerText = `${block.desc}`;
             
             const imgContainer = document.getElementById('reference-image-container');
             const imgEl = document.getElementById('reference-image');
@@ -388,7 +410,7 @@
             
             if (block.usePhoto) {
                 imgContainer.style.display = "block";
-                changeImage(); // Henter første bilde automatisk
+                changeImage();
             } else {
                 imgContainer.style.display = "none";
                 imgEl.src = "";
