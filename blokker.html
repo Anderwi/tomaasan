@@ -12,6 +12,8 @@
             --frozen-color: #cf6679;
             --pause-color: #ffb74d;
             --gold-color: #ffd700;
+            --twist-bg: #2d1318; /* Mørk rødlig for vri */
+            --twist-accent: #ff5252;
         }
         body {
             background-color: var(--bg-color);
@@ -24,7 +26,7 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px 0;
-            transition: background-color 0.3s;
+            transition: background-color 0.5s ease;
         }
         
         /* Hovedmeny */
@@ -74,13 +76,32 @@
             font-size: 0.95rem;
             color: #aaa;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             line-height: 1.4;
         }
+        
+        /* Vri-boks */
+        #twist-alert {
+            display: none;
+            background-color: rgba(255, 82, 82, 0.15);
+            border: 2px solid var(--twist-accent);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+        }
+
         #timer-display {
             font-size: 6rem;
             font-weight: bold;
-            margin: 20px 0;
+            margin: 10px 0 20px 0;
             font-variant-numeric: tabular-nums;
         }
         #status-text {
@@ -119,6 +140,8 @@
         .frozen { background-color: #2c1a1d !important; }
         .frozen #status-text { color: var(--frozen-color); font-weight: bold; }
         .paused { background-color: #1f1b13 !important; }
+        body.twist-active { background-color: var(--twist-bg); }
+        body.twist-active #block-name { color: var(--twist-accent); }
         
         #reward-display {
             font-size: 1.3rem;
@@ -136,8 +159,7 @@
 
     <!-- Hovedmeny -->
     <div id="menu-container">
-        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 20px;">Dagens Økter (120 min)</h2>
-        <!-- Knappene genereres automatisk via JavaScript -->
+        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 20px;">Dagens Økter (102 min)</h2>
         <div id="menu-buttons"></div>
         <div id="reward-display"></div>
     </div>
@@ -146,7 +168,8 @@
     <div id="timer-container">
         <div id="block-name">Blokk Navn</div>
         <div id="block-info-display">Info om blokken</div>
-        <div id="timer-display">20:00</div>
+        <div id="twist-alert"></div>
+        <div id="timer-display">17:00</div>
         <div id="status-text">Klar til start</div>
         <div class="controls">
             <button id="pause-btn" class="control-btn" onclick="togglePause()">Pause</button>
@@ -155,20 +178,20 @@
     </div>
 
     <script>
-        // Innstillinger for blokkene
+        // Innstillinger for blokkene + Skreddersydde vrier
         const blocksConfig = [
-            { id: 1, title: 'Blokk 1: Perspektiv & Form', desc: 'Tegn primitive volumer (bokser, sylindere, kuler) i fri rotasjon. Bruk røntgensyn.', pauses: 10 },
-            { id: 2, title: 'Blokk 2: Anatomi & Konstruksjon', desc: 'Bruk de primitive formene til å bygge forenklede 3D-mannekenger. Fokus på proporsjoner.', pauses: 6 },
-            { id: 3, title: 'Blokk 3: Kryssende & Bøyde former', desc: 'La formene kollidere (f.eks. sylinder gjennom kule) eller deformeres (bøyd boks).', pauses: 5 },
-            { id: 4, title: 'Blokk 4: Lys & Skygge', desc: 'Plasser en tydelig lyskilde og skyggelegg primitive former med skravering.', pauses: 12 },
-            { id: 5, title: 'Blokk 5: Dekonstruksjon', desc: 'Finn en fotoreferanse. Dekonstruer motivet utelukkende til gjennomsiktige 3D-blokker.', pauses: 6 },
-            { id: 6, title: 'Blokk 6: Integrasjon', desc: 'Tegn dynamiske posisjoner fra referanse, bygget bunnsolid opp med 3D-volumer.', pauses: 6 }
+            { id: 1, title: 'Blokk 1: Perspektiv & Form', desc: 'Tegn primitive volumer (bokser, sylindere, kuler) i fri rotasjon. Bruk røntgensyn.', pauses: 10, twistName: 'Blekkgrensen', twistDesc: 'Hver 3D-form skal tegnes med MASKIMALT 10 streker totalt. Planlegg før pennen treffer papiret.' },
+            { id: 2, title: 'Blokk 2: Anatomi & Konstruksjon', desc: 'Bruk de primitive formene til å bygge forenklede 3D-mannekenger. Fokus på proporsjoner.', pauses: 6, twistName: 'Continuous Line', twistDesc: 'Ikke løft pennen! Fra du starter på en figur til den er ferdig, må streken henge sammen.' },
+            { id: 3, title: 'Blokk 3: Kryssende & Bøyde former', desc: 'La formene kollidere (sylinder gjennom kule) eller deformeres (bøyd boks).', pauses: 5, twistName: 'Skuldergrepet', twistDesc: 'Hold pennen helt ytterst på skaftet med to fingre. Du får ikke lov til å bruke håndleddet, kun skulder!' },
+            { id: 4, title: 'Blokk 4: Lys & Skygge', desc: 'Plasser en tydelig lyskilde og skyggelegg primitive former med skravering.', pauses: 12, twistName: 'Svevende skravering', twistDesc: 'Du kan skravere skygger, men pennen kan ikke stoppe opp for å endre retning. Bevegelsen må være en konstant spiral/zikk-zakk.' },
+            { id: 5, title: 'Blokk 5: Dekonstruksjon', desc: 'Finn en fotoreferanse. Dekonstruer motivet utelukkende til gjennomsiktige 3D-blokker.', pauses: 6, twistName: 'Omvendt referanse', twistDesc: 'Snu fotoreferansen din opp-ned! Tegn volumene slik du ser dem, uten å tenke på hva det forestiller.' },
+            { id: 6, title: 'Blokk 6: Integrasjon', desc: 'Tegn dynamiske posisjoner fra referanse, bygget bunnsolid opp med 3D-volumer.', pauses: 6, twistName: 'Blind form', twistDesc: 'Hold blikket 100 % på referansen mens du tegner. Du får IKKE se ned på arket før figuren er ferdig!' }
         ];
 
-        const ACTIVE_TIME_SEC = 20 * 60; // 20 minutter
-        const PAUSE_TIME_SEC = 10;       // 10 sekunder
+        const ACTIVE_TIME_SEC = 17 * 60; // 17 minutter
+        const PAUSE_TIME_SEC = 10;
+        const TWIST_CHANCE = 0.05; // 5 % sjanse for at vrien inntreffer
         
-        // Tilstandsvariabler
         let activeTimeLeft = ACTIVE_TIME_SEC;
         let pauseTimeLeft = PAUSE_TIME_SEC;
         let isFrozen = false;
@@ -177,7 +200,6 @@
         let pauseTriggers = [];
         let wakeLock = null;
 
-        // Bygg hovedmenyen dynamisk
         const menuDiv = document.getElementById('menu-buttons');
         blocksConfig.forEach(block => {
             const btn = document.createElement('button');
@@ -186,7 +208,7 @@
             btn.innerHTML = `
                 <div class="btn-title">${block.title}</div>
                 <div class="btn-desc">${block.desc}</div>
-                <div class="btn-pauses">⏱️ Inneholder ${block.pauses} tilfeldige mikropauser</div>
+                <div class="btn-pauses">⏱️ ${block.pauses} pauser</div>
             `;
             menuDiv.appendChild(btn);
         });
@@ -216,31 +238,29 @@
             playTone(400, 'triangle', 0.1, 0.2);
             setTimeout(() => playTone(500, 'triangle', 0.1, 0.2), 100);
             setTimeout(() => playTone(600, 'triangle', 0.4, 0.2), 200);
-            if(isBig) {
-                setTimeout(() => playTone(800, 'triangle', 0.6, 0.2), 400);
-            }
+            if(isBig) setTimeout(() => playTone(800, 'triangle', 0.6, 0.2), 400);
+        }
+        function playTwistSound() {
+            // En litt mørkere og intens varsellyd når en vri aktiveres
+            playTone(300, 'sawtooth', 0.3, 0.15);
+            setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.15), 300);
         }
 
         async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-            } catch (err) { console.log("WakeLock feilet: " + err.name); }
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
+            catch (err) { console.log("WakeLock feilet"); }
         }
         function releaseWakeLock() {
-            if (wakeLock !== null) {
-                wakeLock.release().then(() => { wakeLock = null; });
-            }
+            if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; });
         }
 
         function generatePauses(numPauses) {
             let pauses = [];
             let attempts = 0;
-            // Legger inn en attempts-sperre for å forhindre uendelig loop
             while(pauses.length < numPauses && attempts < 1000) {
                 attempts++;
                 let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60;
-                let collision = pauses.some(existing => Math.abs(existing - p) < 45); // Minst 45 sek buffer
-                if(!collision) pauses.push(p);
+                if(!pauses.some(existing => Math.abs(existing - p) < 45)) pauses.push(p);
             }
             return pauses.sort((a, b) => b - a);
         }
@@ -258,7 +278,6 @@
                 document.body.classList.remove('frozen');
                 return;
             }
-            
             document.body.classList.remove('paused');
             
             if(isFrozen) {
@@ -279,12 +298,21 @@
             document.getElementById('block-name').innerText = block.title;
             document.getElementById('block-info-display').innerText = `${block.desc} (${block.pauses} pauser)`;
             
+            // Sjekk om vri utløses (5 % sjanse)
+            const twistAlert = document.getElementById('twist-alert');
+            if (Math.random() < TWIST_CHANCE) {
+                document.body.classList.add('twist-active');
+                twistAlert.style.display = "block";
+                twistAlert.innerHTML = `⚠️ <strong>EKSTRA UTFORDRING: ${block.twistName}</strong><br>${block.twistDesc}`;
+                setTimeout(() => playTwistSound(), 100);
+            } else {
+                document.body.classList.remove('twist-active');
+                twistAlert.style.display = "none";
+            }
+            
             document.getElementById('menu-container').style.display = "none";
             document.getElementById('timer-container').style.display = "flex";
-            
-            const rewardDisplay = document.getElementById('reward-display');
-            rewardDisplay.innerText = "";
-            rewardDisplay.className = "";
+            document.getElementById('reward-display').innerText = "";
             
             activeTimeLeft = ACTIVE_TIME_SEC;
             pauseTimeLeft = PAUSE_TIME_SEC;
@@ -314,10 +342,11 @@
             updateUI();
         }
 
-        function cancelBlock() {
+        function resetAppUI() {
             clearInterval(timerInterval);
             releaseWakeLock();
-            document.body.classList.remove('frozen', 'paused');
+            document.body.classList.remove('frozen', 'paused', 'twist-active');
+            document.getElementById('twist-alert').style.display = "none";
             document.getElementById('timer-container').style.display = "none";
             document.getElementById('menu-container').style.display = "flex";
             
@@ -326,10 +355,13 @@
             pauseBtn.style.backgroundColor = "var(--pause-color)";
         }
 
+        function cancelBlock() {
+            resetAppUI();
+        }
+
         function finishBlock() {
-            cancelBlock(); 
+            resetAppUI(); 
             
-            // Lotteri (1% stor premie, 20% liten premie)
             const rand = Math.random();
             const rewardDisplay = document.getElementById('reward-display');
             
