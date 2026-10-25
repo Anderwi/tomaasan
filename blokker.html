@@ -10,6 +10,7 @@
             --text-color: #e0e0e0;
             --accent-color: #03dac6;
             --frozen-color: #cf6679;
+            --pause-color: #ffb74d;
         }
         body {
             background-color: var(--bg-color);
@@ -23,6 +24,33 @@
             margin: 0;
             overflow: hidden;
             transition: background-color 0.3s;
+        }
+        /* Hovedmeny */
+        #menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 80%;
+            max-width: 400px;
+        }
+        .block-btn {
+            background-color: #2c2c2c;
+            color: var(--text-color);
+            border: 1px solid #444;
+            padding: 20px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .block-btn:hover { background-color: #3d3d3d; }
+        .block-btn:active { transform: scale(0.98); }
+
+        /* Timer UI */
+        #timer-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
         }
         #block-name {
             font-size: 1.2rem;
@@ -43,66 +71,83 @@
             margin-bottom: 40px;
             font-weight: 300;
         }
-        button {
-            background-color: var(--accent-color);
-            color: #000;
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        .control-btn {
             border: none;
-            padding: 15px 40px;
+            padding: 15px 30px;
             font-size: 1.2rem;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: transform 0.1s, background-color 0.2s;
         }
-        button:active {
-            transform: scale(0.95);
+        #pause-btn {
+            background-color: var(--pause-color);
+            color: #000;
         }
-        button:disabled {
-            background-color: #555;
+        #cancel-btn {
+            background-color: transparent;
             color: #888;
-            cursor: not-allowed;
+            border: 1px solid #555;
+            box-shadow: none;
         }
-        .frozen {
-            background-color: #2c1a1d !important;
-        }
-        .frozen #status-text {
-            color: var(--frozen-color);
-            font-weight: bold;
-        }
+
+        .frozen { background-color: #2c1a1d !important; }
+        .frozen #status-text { color: var(--frozen-color); font-weight: bold; }
+        .paused { background-color: #1f1b13 !important; }
+        
         #reward-display {
             font-size: 1.5rem;
             color: #bb86fc;
             height: 2rem;
-            margin-top: 20px;
+            margin-top: 30px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div id="block-name">Blokk 1 / 4</div>
-    <div id="timer-display">20:00</div>
-    <div id="status-text">Klar til start</div>
-    <button id="start-btn">Start Blokk</button>
-    <div id="reward-display"></div>
+    <!-- Hovedmeny -->
+    <div id="menu-container">
+        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 30px;">Dagens Økter</h2>
+        <button class="block-btn" onclick="startBlock('Blokk 1: Perspektiv & Form')">Blokk 1: Perspektiv & Form</button>
+        <button class="block-btn" onclick="startBlock('Blokk 2: Kompleks Form')">Blokk 2: Kompleks Form</button>
+        <button class="block-btn" onclick="startBlock('Blokk 3: Anatomi')">Blokk 3: Anatomi</button>
+        <button class="block-btn" onclick="startBlock('Blokk 4: Lys & Skygge')">Blokk 4: Lys & Skygge</button>
+        <div id="reward-display"></div>
+    </div>
+
+    <!-- Timer Skjerm -->
+    <div id="timer-container">
+        <div id="block-name">Blokk Navn</div>
+        <div id="timer-display">20:00</div>
+        <div id="status-text">Klar til start</div>
+        <div class="controls">
+            <button id="pause-btn" class="control-btn" onclick="togglePause()">Pause</button>
+            <button id="cancel-btn" class="control-btn" onclick="cancelBlock()">Avbryt</button>
+        </div>
+    </div>
 
     <script>
         // Innstillinger
-        const ACTIVE_TIME_SEC = 20 * 60; // 20 minutter
-        const PAUSE_TIME_SEC = 10;       // 10 sekunders mikropause
-        const NUM_PAUSES = 8;            // Antall pauser per blokk
-        const WIN_CHANCE = 0.25;         // 25% sjanse for belønning
+        const ACTIVE_TIME_SEC = 20 * 60; 
+        const PAUSE_TIME_SEC = 10;       
+        const NUM_PAUSES = 8;            
+        const WIN_CHANCE = 0.25;         
         
         // Tilstandsvariabler
-        let currentBlock = 1;
         let activeTimeLeft = ACTIVE_TIME_SEC;
         let pauseTimeLeft = PAUSE_TIME_SEC;
         let isFrozen = false;
+        let isUserPaused = false;
         let timerInterval = null;
         let pauseTriggers = [];
         let wakeLock = null;
 
-        // Lydmotor (Web Audio API)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         function playTone(freq, type, duration, vol=0.1) {
@@ -119,32 +164,21 @@
             osc.stop(audioCtx.currentTime + duration);
         }
 
-        function playStopSound() {
-            // Skarpt, irriterende signal for å bryte fokus (Noradrenalin)
-            playTone(800, 'square', 0.3, 0.1);
-        }
-
+        function playStopSound() { playTone(800, 'square', 0.3, 0.1); }
         function playStartSound() {
-            // Mykt, oppadgående signal
             playTone(400, 'sine', 0.2, 0.1);
             setTimeout(() => playTone(600, 'sine', 0.4, 0.1), 150);
         }
-
         function playWinSound() {
             playTone(400, 'triangle', 0.1, 0.2);
             setTimeout(() => playTone(500, 'triangle', 0.1, 0.2), 100);
             setTimeout(() => playTone(600, 'triangle', 0.4, 0.2), 200);
         }
 
-        // Hindre at skjermen slukker (Doze Mode)
         async function requestWakeLock() {
             try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) {
-                console.log("WakeLock feilet: " + err.name);
-            }
+                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+            } catch (err) { console.log("WakeLock feilet: " + err.name); }
         }
         function releaseWakeLock() {
             if (wakeLock !== null) {
@@ -152,15 +186,14 @@
             }
         }
 
-        // Generer tilfeldige pauser (Anti-kollisjon: Minst 45 sek mellomrom)
         function generatePauses() {
             let pauses = [];
             while(pauses.length < NUM_PAUSES) {
-                let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60; // Mellom min 1 og 19
+                let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60;
                 let collision = pauses.some(existing => Math.abs(existing - p) < 45);
                 if(!collision) pauses.push(p);
             }
-            return pauses.sort((a, b) => b - a); // Sorter synkende for lettere uttrekk
+            return pauses.sort((a, b) => b - a);
         }
 
         function formatTime(seconds) {
@@ -170,7 +203,15 @@
         }
 
         function updateUI() {
-            document.getElementById('block-name').innerText = `Blokk ${currentBlock} / 4`;
+            if (isUserPaused) {
+                document.getElementById('status-text').innerText = "Satt på pause";
+                document.body.classList.add('paused');
+                document.body.classList.remove('frozen');
+                return;
+            }
+            
+            document.body.classList.remove('paused');
+            
             if(isFrozen) {
                 document.getElementById('timer-display').innerText = `00:${pauseTimeLeft.toString().padStart(2, '0')}`;
                 document.getElementById('status-text').innerText = "SLIPP PENNEN!";
@@ -182,24 +223,65 @@
             }
         }
 
-        function finishBlock() {
+        function startBlock(blockName) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            requestWakeLock();
+            
+            document.getElementById('block-name').innerText = blockName;
+            document.getElementById('menu-container').style.display = "none";
+            document.getElementById('timer-container').style.display = "flex";
+            document.getElementById('reward-display').innerText = "";
+            
+            activeTimeLeft = ACTIVE_TIME_SEC;
+            pauseTimeLeft = PAUSE_TIME_SEC;
+            isFrozen = false;
+            isUserPaused = false;
+            pauseTriggers = generatePauses();
+            
+            updateUI();
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        function togglePause() {
+            isUserPaused = !isUserPaused;
+            let pauseBtn = document.getElementById('pause-btn');
+            
+            if (isUserPaused) {
+                clearInterval(timerInterval);
+                releaseWakeLock();
+                pauseBtn.innerText = "Gjenoppta";
+                pauseBtn.style.backgroundColor = "var(--accent-color)";
+            } else {
+                requestWakeLock();
+                pauseBtn.innerText = "Pause";
+                pauseBtn.style.backgroundColor = "var(--pause-color)";
+                timerInterval = setInterval(tick, 1000);
+            }
+            updateUI();
+        }
+
+        function cancelBlock() {
             clearInterval(timerInterval);
             releaseWakeLock();
-            document.getElementById('status-text').innerText = "Blokk ferdig";
-            document.getElementById('start-btn').style.display = "block";
+            document.body.classList.remove('frozen', 'paused');
+            document.getElementById('timer-container').style.display = "none";
+            document.getElementById('menu-container').style.display = "flex";
             
-            // Lotteri
+            // Tilbakestill pause-knappen hvis den var satt på pause
+            let pauseBtn = document.getElementById('pause-btn');
+            pauseBtn.innerText = "Pause";
+            pauseBtn.style.backgroundColor = "var(--pause-color)";
+        }
+
+        function finishBlock() {
+            cancelBlock(); // Deler samme logikk for å rydde opp og gå til menyen
+            
+            // Lotteri-logikk kjøres kun ved fullført blokk
             if(Math.random() < WIN_CHANCE) {
                 playWinSound();
                 document.getElementById('reward-display').innerText = "🎉 DU VANT EN BELØNNING! 🎉";
             } else {
                 document.getElementById('reward-display').innerText = "Ingen belønning denne gangen.";
-            }
-
-            currentBlock++;
-            if(currentBlock > 4) {
-                document.getElementById('start-btn').style.display = "none";
-                document.getElementById('block-name').innerText = "Økt fullført";
             }
         }
 
@@ -213,9 +295,8 @@
                 }
             } else {
                 activeTimeLeft--;
-                // Sjekk om vi treffer en pause
                 if(pauseTriggers.length > 0 && activeTimeLeft === pauseTriggers[0]) {
-                    pauseTriggers.shift(); // Fjern triggern
+                    pauseTriggers.shift();
                     isFrozen = true;
                     playStopSound();
                 } else if(activeTimeLeft <= 0) {
@@ -224,22 +305,6 @@
             }
             updateUI();
         }
-
-        document.getElementById('start-btn').addEventListener('click', () => {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            requestWakeLock();
-            
-            activeTimeLeft = ACTIVE_TIME_SEC;
-            pauseTimeLeft = PAUSE_TIME_SEC;
-            isFrozen = false;
-            pauseTriggers = generatePauses();
-            
-            document.getElementById('start-btn').style.display = "none";
-            document.getElementById('reward-display').innerText = "";
-            
-            updateUI();
-            timerInterval = setInterval(tick, 1000);
-        });
     </script>
 </body>
 </html>
