@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#121212">
-    <link rel="apple-touch-icon" href="https://picsum.photos/192/192?random=1"> <!-- Gir appen et tilfeldig ikon på hjemskjermen -->
+    <link rel="apple-touch-icon" href="https://picsum.photos/192/192?random=1">
     <link rel="manifest" href="manifest.json">
     <title>Nevro-Tegning (102 min)</title>
     <style>
@@ -37,7 +37,6 @@
             transition: background-color 0.5s ease;
         }
         
-        /* Hovedmeny */
         #menu-container {
             display: flex;
             flex-direction: column;
@@ -75,7 +74,6 @@
         .btn-desc { font-size: 0.95rem; color: #aaa; margin-bottom: 12px; line-height: 1.5; flex-grow: 1; }
         .btn-pauses { font-size: 0.8rem; color: #888; font-style: italic; margin-top: auto; }
 
-        /* Timer UI */
         #timer-container {
             display: none;
             flex-direction: column;
@@ -83,195 +81,96 @@
             width: 90%;
             max-width: 450px;
         }
-        #block-name {
-            font-size: 1.4rem;
+        #block-name { font-size: 1.4rem; color: var(--accent-color); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; text-align: center; font-weight: bold; }
+        #block-info-display { font-size: 0.95rem; color: #aaa; text-align: center; margin-bottom: 10px; line-height: 1.4; }
+
+        #reference-image-container { display: none; position: relative; width: 100%; height: 250px; margin: 10px 0; border-radius: 8px; overflow: hidden; border: 2px solid #444; background-color: #000; cursor: pointer; }
+        #reference-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .upside-down { transform: rotate(180deg); }
+        
+        #twist-alert { display: none; background-color: rgba(255, 82, 82, 0.15); border: 2px solid var(--twist-accent); color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; animation: pulse 2s infinite; font-size: 0.9rem; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); } }
+
+        #timer-display { font-size: 5rem; font-weight: bold; margin: 10px 0; font-variant-numeric: tabular-nums; }
+        #status-text { font-size: 1.5rem; height: 2rem; margin-bottom: 20px; font-weight: 300; text-align: center; }
+        
+        /* Lyd-velger inne i timer-modus */
+        #audio-select {
+            background-color: #1e1e1e;
             color: var(--accent-color);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-align: center;
-            font-weight: bold;
-        }
-        #block-info-display {
-            font-size: 0.95rem;
-            color: #aaa;
-            text-align: center;
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-
-        /* Fotoreferanse Styling (Portrettmodus) */
-        #reference-image-container {
-            display: none;
-            position: relative;
-            width: 100%;
-            height: 250px;
-            margin: 10px 0;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid #444;
-            background-color: #000;
-            cursor: pointer; 
-        }
-        #reference-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-        .upside-down {
-            transform: rotate(180deg);
-        }
-        
-        #twist-alert {
-            display: none;
-            background-color: rgba(255, 82, 82, 0.15);
-            border: 2px solid var(--twist-accent);
-            color: #fff;
+            border: 1px solid #444;
             padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            text-align: center;
-            animation: pulse 2s infinite;
+            border-radius: 30px; /* Matcher de andre knappene */
             font-size: 0.9rem;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+            text-align: center;
+            outline: none;
+            cursor: pointer;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 300px;
         }
 
-        #timer-display {
-            font-size: 5rem;
-            font-weight: bold;
-            margin: 10px 0;
-            font-variant-numeric: tabular-nums;
-        }
-        #status-text {
-            font-size: 1.5rem;
-            height: 2rem;
-            margin-bottom: 30px;
-            font-weight: 300;
-            text-align: center;
-        }
-        
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            width: 100%;
-            justify-content: center;
-        }
-        .control-btn {
-            border: none;
-            padding: 12px 20px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            flex: 1 1 30%; 
-            min-width: 100px;
-        }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; justify-content: center; }
+        .control-btn { border: none; padding: 12px 20px; font-size: 1rem; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex: 1 1 30%; min-width: 100px; }
         #pause-btn { background-color: var(--pause-color); color: #000; }
-        
-        #emergency-btn {
-            background-color: transparent;
-            color: var(--emergency-accent);
-            border: 1px solid var(--emergency-accent);
-            box-shadow: none;
-        }
-        
-        #cancel-btn {
-            background-color: transparent;
-            color: #888;
-            border: 1px solid #555;
-            box-shadow: none;
-        }
+        #emergency-btn { background-color: transparent; color: var(--emergency-accent); border: 1px solid var(--emergency-accent); box-shadow: none; }
+        #cancel-btn { background-color: transparent; color: #888; border: 1px solid #555; box-shadow: none; }
 
         .frozen { background-color: #2c1a1d !important; }
         .frozen #status-text { color: var(--frozen-color); font-weight: bold; }
         .paused { background-color: #1f1b13 !important; }
-        
         body.twist-active { background-color: var(--twist-bg); }
         body.twist-active #block-name { color: var(--twist-accent); }
-        
         body.emergency-mode { background-color: var(--emergency-bg) !important; }
         body.emergency-mode #block-name { color: var(--emergency-accent) !important; }
         body.emergency-mode #block-info-display { color: #fff; }
         
-        #reward-display {
-            font-size: 1.3rem;
-            height: 3rem;
-            margin-top: 30px;
-            text-align: center;
-            font-weight: bold;
-        }
+        #reward-display { font-size: 1.3rem; height: 3rem; margin-top: 30px; text-align: center; font-weight: bold; }
         .reward-none { color: #888; }
         .reward-small { color: #bb86fc; }
         .reward-big { color: var(--gold-color); font-size: 1.5rem !important; text-transform: uppercase; }
 
-        /* --- LANDSKAPSMODUS (SIDELENGS MOBIL) --- */
         @media (orientation: landscape) {
-            body { padding: 5px 0; justify-content: flex-start; } /* Fjerner unødvendig luft på toppen */
-            #timer-container {
-                max-width: 98%; /* Lar containeren bruke nesten hele skjermbredden */
-            }
-            #reference-image-container {
-                height: 80vh; /* Økt fra 60vh til 80vh for at bildet kan bli mye større */
-                margin: 5px 0;
-            }
-            #reference-image {
-                object-fit: contain; 
-            }
-            #timer-display {
-                font-size: 2.5rem; /* Krymper klokken litt ekstra for å gi bildet all plass */
-                margin: 5px 0;
-            }
-            #status-text {
-                font-size: 1.2rem;
-                margin-bottom: 10px;
-                height: 1.5rem;
-            }
-            .controls {
-                gap: 5px;
-            }
-            .control-btn {
-                padding: 8px 15px;
-                font-size: 0.9rem;
-            }
-            #block-name {
-                font-size: 1.1rem;
-                margin-top: 5px;
-            }
-            #block-info-display {
-                margin-bottom: 5px;
-            }
+            body { padding: 5px 0; justify-content: flex-start; } 
+            #timer-container { max-width: 98%; }
+            #reference-image-container { height: 80vh; margin: 5px 0; }
+            #reference-image { object-fit: contain; }
+            #timer-display { font-size: 2.5rem; margin: 5px 0; }
+            #status-text { font-size: 1.2rem; margin-bottom: 5px; height: 1.5rem; }
+            #audio-select { margin-bottom: 10px; padding: 8px; }
+            .controls { gap: 5px; }
+            .control-btn { padding: 8px 15px; font-size: 0.9rem; }
+            #block-name { font-size: 1.1rem; margin-top: 5px; }
+            #block-info-display { margin-bottom: 5px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Hovedmeny -->
     <div id="menu-container">
-        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 20px;">Dagens Økter (102 min)</h2>
+        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 15px;">Dagens Økter (102 min)</h2>
         <div id="menu-buttons"></div>
         <div id="reward-display"></div>
     </div>
 
-    <!-- Timer Skjerm -->
     <div id="timer-container">
         <div id="block-name">Blokk Navn</div>
         <div id="block-info-display">Info om blokken</div>
-        
-        <!-- Bilde-container med klikk-funksjon -->
         <div id="reference-image-container" onclick="changeImage()">
             <img id="reference-image" src="" alt="Fotoreferanse">
         </div>
-        
         <div id="twist-alert"></div>
         <div id="timer-display">17:00</div>
         <div id="status-text">Klar til start</div>
+        
+        <!-- Dynamisk lyd-velger inne i blokken -->
+        <select id="audio-select" onchange="updateBackgroundAudio()">
+            <option value="none" selected>🔇 Lydløs (Ingen bakgrunnslyd)</option>
+            <option value="white">📻 Hvit Støy (Blokkerer prat/støy)</option>
+            <option value="brown">🌊 Brun Støy (Dyp, beroligende)</option>
+            <option value="binaural">🎧 40 Hz Binaural Beats (Krever propper)</option>
+        </select>
+
         <div class="controls">
             <button id="pause-btn" class="control-btn" onclick="togglePause()">Pause</button>
             <button id="emergency-btn" class="control-btn" onclick="triggerEmergency()">Nødbrems</button>
@@ -308,21 +207,22 @@
         let pauseTriggers = [];
         let wakeLock = null;
 
+        // Lydvariabler for bakgrunnsstøy
+        let bgAudioNodes = []; 
+        let bgGainNode = null;
+
         const menuDiv = document.getElementById('menu-buttons');
         blocksConfig.forEach(block => {
             const btn = document.createElement('button');
             btn.className = 'block-btn';
             btn.onclick = () => startBlock(block);
-            btn.innerHTML = `
-                <div class="btn-title">${block.title}</div>
-                <div class="btn-desc">${block.desc}</div>
-                <div class="btn-pauses">⏱️ ${block.pauses} pauser ${block.usePhoto ? '🖼️ m/ foto' : ''}</div>
-            `;
+            btn.innerHTML = `<div class="btn-title">${block.title}</div><div class="btn-desc">${block.desc}</div><div class="btn-pauses">⏱️ ${block.pauses} pauser ${block.usePhoto ? '🖼️ m/ foto' : ''}</div>`;
             menuDiv.appendChild(btn);
         });
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
+        // --- LYDSYSTEM ---
         function playTone(freq, type, duration, vol=0.1) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
@@ -343,12 +243,89 @@
         function playTwistSound() { playTone(300, 'sawtooth', 0.3, 0.15); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.15), 300); }
         function playEmergencySound() { playTone(200, 'sine', 0.8, 0.1); }
 
+        function updateBackgroundAudio() {
+            const type = document.getElementById('audio-select').value;
+            startBackgroundAudio(type);
+        }
+
+        function startBackgroundAudio(type) {
+            stopBackgroundAudio();
+            if(type === 'none') return;
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            bgGainNode = audioCtx.createGain();
+            bgGainNode.connect(audioCtx.destination);
+
+            if(type === 'white') {
+                // Genererer Hvit Støy (alle frekvenser)
+                let bufferSize = 2 * audioCtx.sampleRate;
+                let noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1; 
+                }
+                let whiteNoise = audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                whiteNoise.loop = true;
+                bgGainNode.gain.value = 0.05; // Hvit støy oppleves veldig høyt, så volumet er lavt
+                whiteNoise.connect(bgGainNode);
+                whiteNoise.start();
+                bgAudioNodes.push(whiteNoise);
+            }
+            else if(type === 'brown') {
+                // Genererer Brun Støy (dypere, lavpassfiltrert)
+                let bufferSize = 2 * audioCtx.sampleRate;
+                let noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let output = noiseBuffer.getChannelData(0);
+                let lastOut = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    let white = Math.random() * 2 - 1;
+                    output[i] = (lastOut + (0.02 * white)) / 1.02; 
+                    lastOut = output[i];
+                    output[i] *= 3.5; 
+                }
+                let brownNoise = audioCtx.createBufferSource();
+                brownNoise.buffer = noiseBuffer;
+                brownNoise.loop = true;
+                bgGainNode.gain.value = 0.5; 
+                brownNoise.connect(bgGainNode);
+                brownNoise.start();
+                bgAudioNodes.push(brownNoise);
+            } 
+            else if (type === 'binaural') {
+                let oscL = audioCtx.createOscillator();
+                let oscR = audioCtx.createOscillator();
+                let panL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : audioCtx.createGain(); 
+                let panR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : audioCtx.createGain();
+                
+                if (panL.pan) { panL.pan.value = -1; panR.pan.value = 1; }
+                
+                oscL.type = 'sine'; oscR.type = 'sine';
+                oscL.frequency.value = 200; 
+                oscR.frequency.value = 240; 
+                
+                bgGainNode.gain.value = 0.15; 
+                
+                oscL.connect(panL); panL.connect(bgGainNode);
+                oscR.connect(panR); panR.connect(bgGainNode);
+                
+                oscL.start(); oscR.start();
+                bgAudioNodes.push(oscL, oscR);
+            }
+        }
+
+        function stopBackgroundAudio() {
+            bgAudioNodes.forEach(node => { try { node.stop(); } catch(e){} });
+            bgAudioNodes = [];
+            if(bgGainNode) { bgGainNode.disconnect(); bgGainNode = null; }
+        }
+        // --- SLUTT LYDSYSTEM ---
+
         async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
         function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
         function generatePauses(numPauses) {
-            let pauses = [];
-            let attempts = 0;
+            let pauses = []; let attempts = 0;
             while(pauses.length < numPauses && attempts < 1000) {
                 attempts++;
                 let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60;
@@ -387,56 +364,41 @@
             if(isEmergencyMode) return;
             isEmergencyMode = true;
             playEmergencySound();
-            
-            document.body.classList.remove('twist-active');
-            document.body.classList.add('emergency-mode');
-            
+            document.body.classList.remove('twist-active'); document.body.classList.add('emergency-mode');
             document.getElementById('twist-alert').style.display = "none";
             document.getElementById('emergency-btn').style.display = "none";
             document.getElementById('reference-image-container').style.display = "none";
-            
             document.getElementById('block-name').innerText = "Kognitiv Cool-Down";
             const randomTask = emergencyTasks[Math.floor(Math.random() * emergencyTasks.length)];
             document.getElementById('block-info-display').innerHTML = `<strong>Nødbrems aktivert:</strong><br><br>${randomTask}`;
         }
 
-        function changeImage() {
-            const imgEl = document.getElementById('reference-image');
-            imgEl.src = `https://picsum.photos/600/400?random=${Date.now()}`;
-        }
+        function changeImage() { document.getElementById('reference-image').src = `https://picsum.photos/600/400?random=${Date.now()}`; }
 
         function startBlock(block) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
             requestWakeLock();
-            
             document.getElementById('block-name').innerText = block.title;
             document.getElementById('block-info-display').innerText = `${block.desc}`;
+            
+            // Starter eventuell valgt bakgrunnslyd
+            updateBackgroundAudio();
             
             const imgContainer = document.getElementById('reference-image-container');
             const imgEl = document.getElementById('reference-image');
             imgEl.classList.remove('upside-down'); 
             
-            if (block.usePhoto) {
-                imgContainer.style.display = "block";
-                changeImage();
-            } else {
-                imgContainer.style.display = "none";
-                imgEl.src = "";
-            }
+            if (block.usePhoto) { imgContainer.style.display = "block"; changeImage(); } 
+            else { imgContainer.style.display = "none"; imgEl.src = ""; }
 
             const twistAlert = document.getElementById('twist-alert');
             if (Math.random() < TWIST_CHANCE) {
                 document.body.classList.add('twist-active');
                 twistAlert.style.display = "block";
                 twistAlert.innerHTML = `⚠️ <strong>EKSTRA UTFORDRING: ${block.twistName}</strong><br>${block.twistDesc}`;
-                
-                if(block.twistName === 'Omvendt referanse') {
-                    imgEl.classList.add('upside-down');
-                }
+                if(block.twistName === 'Omvendt referanse') imgEl.classList.add('upside-down');
                 setTimeout(() => playTwistSound(), 100);
             } else {
-                document.body.classList.remove('twist-active');
-                twistAlert.style.display = "none";
+                document.body.classList.remove('twist-active'); twistAlert.style.display = "none";
             }
             
             document.getElementById('menu-container').style.display = "none";
@@ -444,11 +406,8 @@
             document.getElementById('reward-display').innerText = "";
             document.getElementById('emergency-btn').style.display = "block";
             
-            activeTimeLeft = ACTIVE_TIME_SEC;
-            pauseTimeLeft = PAUSE_TIME_SEC;
-            isFrozen = false;
-            isUserPaused = false;
-            isEmergencyMode = false;
+            activeTimeLeft = ACTIVE_TIME_SEC; pauseTimeLeft = PAUSE_TIME_SEC;
+            isFrozen = false; isUserPaused = false; isEmergencyMode = false;
             pauseTriggers = generatePauses(block.pauses);
             
             updateUI();
@@ -462,12 +421,12 @@
             if (isUserPaused) {
                 clearInterval(timerInterval);
                 releaseWakeLock();
-                pauseBtn.innerText = "Gjenoppta";
-                pauseBtn.style.backgroundColor = "var(--accent-color)";
+                if(audioCtx.state === 'running') audioCtx.suspend();
+                pauseBtn.innerText = "Gjenoppta"; pauseBtn.style.backgroundColor = "var(--accent-color)";
             } else {
                 requestWakeLock();
-                pauseBtn.innerText = "Pause";
-                pauseBtn.style.backgroundColor = "var(--pause-color)";
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                pauseBtn.innerText = "Pause"; pauseBtn.style.backgroundColor = "var(--pause-color)";
                 timerInterval = setInterval(tick, 1000);
             }
             updateUI();
@@ -476,17 +435,19 @@
         function resetAppUI() {
             clearInterval(timerInterval);
             releaseWakeLock();
+            stopBackgroundAudio();
             document.body.classList.remove('frozen', 'paused', 'twist-active', 'emergency-mode');
             isEmergencyMode = false;
-            
             document.getElementById('reference-image-container').style.display = "none";
             document.getElementById('twist-alert').style.display = "none";
             document.getElementById('timer-container').style.display = "none";
             document.getElementById('menu-container').style.display = "flex";
             
+            // Tilbakestill lyd-velgeren for neste gang
+            document.getElementById('audio-select').value = "none";
+            
             let pauseBtn = document.getElementById('pause-btn');
-            pauseBtn.innerText = "Pause";
-            pauseBtn.style.backgroundColor = "var(--pause-color)";
+            pauseBtn.innerText = "Pause"; pauseBtn.style.backgroundColor = "var(--pause-color)";
         }
 
         function cancelBlock() { resetAppUI(); }
