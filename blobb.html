@@ -242,6 +242,14 @@
         function playWinSound(isBig) { playTone(400, 'triangle', 0.1, 0.2); setTimeout(() => playTone(500, 'triangle', 0.1, 0.2), 100); setTimeout(() => playTone(600, 'triangle', 0.4, 0.2), 200); if(isBig) setTimeout(() => playTone(800, 'triangle', 0.6, 0.2), 400); }
         function playTwistSound() { playTone(300, 'sawtooth', 0.3, 0.15); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.15), 300); }
         function playEmergencySound() { playTone(200, 'sine', 0.8, 0.1); }
+        function playFanfare() {
+    // Første tone (kort)
+    playTone(523, 'triangle', 0.15, 0.2); 
+    // Andre tone (kort) - spilles etter 200 millisekunder
+    setTimeout(() => playTone(523, 'triangle', 0.15, 0.2), 200); 
+    // Tredje tone (lang og litt lysere) - spilles etter 400 millisekunder
+    setTimeout(() => playTone(659, 'triangle', 0.6, 0.2), 400); 
+}
 
         function updateBackgroundAudio() {
             const type = document.getElementById('audio-select').value;
@@ -451,15 +459,27 @@
         }
 
         function cancelBlock() { resetAppUI(); }
-
+        
         function finishBlock() {
-            resetAppUI(); 
-            const rand = Math.random();
-            const rewardDisplay = document.getElementById('reward-display');
-            if(rand <= 0.01) { playWinSound(true); rewardDisplay.innerText = "🏆 DU VANT EN STOR PREMIE! 🏆"; rewardDisplay.className = "reward-big"; } 
-            else if(rand <= 0.21) { playWinSound(false); rewardDisplay.innerText = "🎉 DU VANT EN LITEN PREMIE! 🎉"; rewardDisplay.className = "reward-small"; } 
-            else { rewardDisplay.innerText = "Ingen belønning denne gangen."; rewardDisplay.className = "reward-none"; }
-        }
+    resetAppUI(); 
+    
+    // Spiller den nye fanfaren umiddelbart når tiden er ute!
+    playFanfare();
+
+    const rand = Math.random();
+    const rewardDisplay = document.getElementById('reward-display');
+    
+    if(rand <= 0.01) { 
+        rewardDisplay.innerText = "🏆 DU VANT EN STOR PREMIE! 🏆"; 
+        rewardDisplay.className = "reward-big"; 
+    } else if(rand <= 0.21) { 
+        rewardDisplay.innerText = "🎉 DU VANT EN LITEN PREMIE! 🎉"; 
+        rewardDisplay.className = "reward-small"; 
+    } else { 
+        rewardDisplay.innerText = "Økten er ferdig! Godt jobbet."; 
+        rewardDisplay.className = "reward-none"; 
+    }
+}
 
         function tick() {
             if(isFrozen) {
