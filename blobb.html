@@ -384,6 +384,9 @@
         function changeImage() { document.getElementById('reference-image').src = `https://picsum.photos/600/400?random=${Date.now()}`; }
 
         function startBlock(block) {
+            // Legg til denne linjen aller først for å "vekke" lydmotoren:
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+
             requestWakeLock();
             document.getElementById('block-name').innerText = block.title;
             document.getElementById('block-info-display').innerText = `${block.desc}`;
