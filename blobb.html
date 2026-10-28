@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+    <link rel="apple-touch-icon" href="https://picsum.photos/192/192?random=1">
+    <link rel="manifest" href="manifest.json">
+    <title>Nevro-Tegning (102 min)</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #03dac6;
+            --frozen-color: #cf6679;
+            --pause-color: #ffb74d;
+            --gold-color: #ffd700;
+            --twist-bg: #2d1318; 
+            --twist-accent: #ff5252;
+            --emergency-bg: #0d1b2a; 
+            --emergency-accent: #77aaff;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            transition: background-color 0.5s ease;
+        }
+        
+        #menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 90%;
+            max-width: 450px;
+            overflow-y: auto;
+            padding-bottom: 30px;
+        }
+        
+        #menu-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-auto-rows: 1fr; 
+            gap: 15px;
+        }
+        
+        .block-btn {
+            background-color: #2c2c2c;
+            color: var(--text-color);
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: left;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100%; 
+        }
+        .block-btn:hover { background-color: #3d3d3d; }
+        .block-btn:active { transform: scale(0.98); }
+        .btn-title { font-size: 1.1rem; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
+        .btn-desc { font-size: 0.95rem; color: #aaa; margin-bottom: 12px; line-height: 1.5; flex-grow: 1; }
+        .btn-pauses { font-size: 0.8rem; color: #888; font-style: italic; margin-top: auto; }
+
+        #timer-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 450px;
+        }
+        #block-name { font-size: 1.4rem; color: var(--accent-color); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; text-align: center; font-weight: bold; }
+        #block-info-display { font-size: 0.95rem; color: #aaa; text-align: center; margin-bottom: 10px; line-height: 1.4; }
+
+        #reference-image-container { display: none; position: relative; width: 100%; height: 250px; margin: 10px 0; border-radius: 8px; overflow: hidden; border: 2px solid #444; background-color: #000; cursor: pointer; }
+        #reference-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .upside-down { transform: rotate(180deg); }
+        
+        #twist-alert { display: none; background-color: rgba(255, 82, 82, 0.15); border: 2px solid var(--twist-accent); color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; animation: pulse 2s infinite; font-size: 0.9rem; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); } }
+
+        #timer-display { font-size: 5rem; font-weight: bold; margin: 10px 0; font-variant-numeric: tabular-nums; }
+        #status-text { font-size: 1.5rem; height: 2rem; margin-bottom: 20px; font-weight: 300; text-align: center; }
+        
+        /* Lyd-velger inne i timer-modus */
+        #audio-select {
+            background-color: #1e1e1e;
+            color: var(--accent-color);
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            text-align: center;
+            outline: none;
+            cursor: pointer;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; justify-content: center; }
+        .control-btn { border: none; padding: 12px 20px; font-size: 1rem; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex: 1 1 30%; min-width: 100px; }
+        #pause-btn { background-color: var(--pause-color); color: #000; }
+        #emergency-btn { background-color: transparent; color: var(--emergency-accent); border: 1px solid var(--emergency-accent); box-shadow: none; }
+        #cancel-btn { background-color: transparent; color: #888; border: 1px solid #555; box-shadow: none; }
+
+        .frozen { background-color: #2c1a1d !important; }
+        .frozen #status-text { color: var(--frozen-color); font-weight: bold; }
+        .paused { background-color: #1f1b13 !important; }
+        body.twist-active { background-color: var(--twist-bg); }
+        body.twist-active #block-name { color: var(--twist-accent); }
+        body.emergency-mode { background-color: var(--emergency-bg) !important; }
+        body.emergency-mode #block-name { color: var(--emergency-accent) !important; }
+        body.emergency-mode #block-info-display { color: #fff; }
+        
+        #reward-display { font-size: 1.3rem; height: 3rem; margin-top: 30px; text-align: center; font-weight: bold; }
+        .reward-none { color: #888; }
+        .reward-small { color: #bb86fc; }
+        .reward-big { color: var(--gold-color); font-size: 1.5rem !important; text-transform: uppercase; }
+
+        @media (orientation: landscape) {
+            body { padding: 5px 0; justify-content: flex-start; } 
+            #timer-container { max-width: 98%; }
+            #reference-image-container { height: 80vh; margin: 5px 0; }
+            #reference-image { object-fit: contain; }
+            #timer-display { font-size: 2.5rem; margin: 5px 0; }
+            #status-text { font-size: 1.2rem; margin-bottom: 5px; height: 1.5rem; }
+            #audio-select { margin-bottom: 10px; padding: 8px; }
+            .controls { gap: 5px; }
+            .control-btn { padding: 8px 15px; font-size: 0.9rem; }
+            #block-name { font-size: 1.1rem; margin-top: 5px; }
+            #block-info-display { margin-bottom: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menu-container">
+        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 15px;">Dagens Økter (102 min)</h2>
+        <div id="menu-buttons"></div>
+        <div id="reward-display"></div>
+    </div>
+
+    <div id="timer-container">
+        <div id="block-name">Blokk Navn</div>
+        <div id="block-info-display">Info om blokken</div>
+        <div id="reference-image-container" onclick="changeImage()">
+            <img id="reference-image" src="" alt="Fotoreferanse">
+        </div>
+        <div id="twist-alert"></div>
+        <div id="timer-display">17:00</div>
+        <div id="status-text">Klar til start</div>
+        
+        <!-- Dynamisk lyd-velger inne i blokken -->
+        <select id="audio-select" onchange="updateBackgroundAudio()">
+            <option value="none" selected>🔇 Lydløs (Ingen bakgrunnslyd)</option>
+            <option value="white">📻 Hvit Støy (Blokkerer prat/støy)</option>
+            <option value="brown">🌊 Brun Støy (Dyp, beroligende)</option>
+            <option value="binaural">🎧 40 Hz Binaural Beats (Krever propper)</option>
+        </select>
+
+        <div class="controls">
+            <button id="pause-btn" class="control-btn" onclick="togglePause()">Pause</button>
+            <button id="emergency-btn" class="control-btn" onclick="triggerEmergency()">Nødbrems</button>
+            <button id="cancel-btn" class="control-btn" onclick="cancelBlock()">Avbryt</button>
+        </div>
+    </div>
+
+    <script>
+        const ACTIVE_TIME_SEC = 17 * 60; 
+        const PAUSE_TIME_SEC = 10;
+        const TWIST_CHANCE = 0.05; 
+        
+        // OPPDATERT BLOKK-KONFIGURASJON
+        const blocksConfig = [
+            { id: 1, title: 'Blokk 1: Primitive volumer', desc: 'Tegn primitive volumer fra eget hode med "røntgensyn" for å bygge 3D-forståelse.', pauses: 6, twistName: 'Blekkgrensen', twistDesc: 'Maks 10 streker per form.', usePhoto: false },
+            { id: 2, title: 'Blokk 2: Figurer i perspektiv', desc: 'Sett sammen enkle figurer fra eget hode i et perspektiv. Vri på figurene for å teste kontraksjonene. Tilpass kompleksitet etter dagsform.', pauses: 6, twistName: 'Continuous Line', twistDesc: 'Ikke løft pennen fra arket!', usePhoto: false },
+            { id: 3, title: 'Blokk 3: Kopiere fra referanse', desc: 'Kopier objekter og landskap i forenklede former fra referansebildet.', pauses: 6, twistName: 'Omvendt referanse', twistDesc: 'Tegn referansen opp-ned!', usePhoto: true },
+            { id: 4, title: 'Blokk 4: Komponere & utvikle', desc: 'Fritt arbeid! Komponer og videreutvikle egne ideer du har.', pauses: 0, twistName: 'Blekkgrensen', twistDesc: 'Ikke bruk viskelær, eie feilene dine.', usePhoto: false },
+            { id: 5, title: 'Blokk 5: Repetere & finpusse', desc: 'Repeter og finpuss en bestemt idé du har valgt å jobbe videre med.', pauses: 6, twistName: 'Skuldergrepet', twistDesc: 'Hold pennen ytterst på skaftet.', usePhoto: false },
+            { id: 6, title: 'Blokk 6: Frie oppgaver', desc: 'Frie oppgaver som du bestemmer helt selv. Nyt flytsonen!', pauses: 0, twistName: 'Continuous Line', twistDesc: 'La streken vandre uten å løfte pennen for ofte.', usePhoto: false }
+        ];
+
+        // EGEN BILDELISTE FOR BLOKK 3 (Lim inn egne lenker her)
+        const myImages = [
+            "https://media.snl.no/media/135149/standard_elg_ku_kul.png",
+            "https://media.snl.no/media/48623/standard_compressed_elg.jpg",
+            "https://images.unsplash.com/photo-1506744626753-1fa44df14c28?q=80&w=1000",
+        ];
+
+        const emergencyTasks = [
+            "GHOSTING: Utfør bevegelsen i luften 3-4 ganger over arket før pennen treffer.",
+            "PUNKT-TIL-PUNKT: Sett to små prikker, forbind dem rolig og selvsikkert.",
+            "STORE FORMER: Tegn dobbelt så stort for å tvinge frem bruk av skuldermuskelen."
+        ];
+        
+        let activeTimeLeft = ACTIVE_TIME_SEC;
+        let pauseTimeLeft = PAUSE_TIME_SEC;
+        let isFrozen = false;
+        let isUserPaused = false;
+        let isEmergencyMode = false;
+        let timerInterval = null;
+        let pauseTriggers = [];
+        let wakeLock = null;
+
+        // Lydvariabler for bakgrunnsstøy
+        let bgAudioNodes = []; 
+        let bgGainNode = null;
+
+        const menuDiv = document.getElementById('menu-buttons');
+        blocksConfig.forEach(block => {
+            const btn = document.createElement('button');
+            btn.className = 'block-btn';
+            btn.onclick = () => startBlock(block);
+            btn.innerHTML = `<div class="btn-title">${block.title}</div><div class="btn-desc">${block.desc}</div><div class="btn-pauses">⏱️ ${block.pauses} pauser ${block.usePhoto ? '🖼️ m/ foto' : ''}</div>`;
+            menuDiv.appendChild(btn);
+        });
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // --- LYDSYSTEM ---
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playStopSound() { playTone(800, 'square', 0.3, 0.1); }
+        function playStartSound() { playTone(400, 'sine', 0.2, 0.1); setTimeout(() => playTone(600, 'sine', 0.4, 0.1), 150); }
+        function playTwistSound() { playTone(300, 'sawtooth', 0.3, 0.15); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.15), 300); }
+        function playEmergencySound() { playTone(200, 'sine', 0.8, 0.1); }
+        
+        function playFanfare() {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            
+            function scheduleTone(freq, delay, duration) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + delay);
+                gain.gain.setValueAtTime(0.2, now + delay);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + delay + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + delay);
+                osc.stop(now + delay + duration);
+            }
+
+            scheduleTone(523, 0, 0.15);    
+            scheduleTone(523, 0.2, 0.15);  
+            scheduleTone(659, 0.4, 0.6);   
+        }
+
+        function updateBackgroundAudio() {
+            const type = document.getElementById('audio-select').value;
+            startBackgroundAudio(type);
+        }
+
+        function startBackgroundAudio(type) {
+            stopBackgroundAudio();
+            if(type === 'none') return;
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            bgGainNode = audioCtx.createGain();
+            bgGainNode.connect(audioCtx.destination);
+
+            if(type === 'white') {
+                let bufferSize = 2 * audioCtx.sampleRate;
+                let noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1; 
+                }
+                let whiteNoise = audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                whiteNoise.loop = true;
+                bgGainNode.gain.value = 0.05; 
+                whiteNoise.connect(bgGainNode);
+                whiteNoise.start();
+                bgAudioNodes.push(whiteNoise);
+            }
+            else if(type === 'brown') {
+                let bufferSize = 2 * audioCtx.sampleRate;
+                let noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let output = noiseBuffer.getChannelData(0);
+                let lastOut = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    let white = Math.random() * 2 - 1;
+                    output[i] = (lastOut + (0.02 * white)) / 1.02; 
+                    lastOut = output[i];
+                    output[i] *= 3.5; 
+                }
+                let brownNoise = audioCtx.createBufferSource();
+                brownNoise.buffer = noiseBuffer;
+                brownNoise.loop = true;
+                bgGainNode.gain.value = 0.5; 
+                brownNoise.connect(bgGainNode);
+                brownNoise.start();
+                bgAudioNodes.push(brownNoise);
+            } 
+            else if (type === 'binaural') {
+                let oscL = audioCtx.createOscillator();
+                let oscR = audioCtx.createOscillator();
+                let panL = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : audioCtx.createGain(); 
+                let panR = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : audioCtx.createGain();
+                
+                if (panL.pan) { panL.pan.value = -1; panR.pan.value = 1; }
+                
+                oscL.type = 'sine'; oscR.type = 'sine';
+                oscL.frequency.value = 200; 
+                oscR.frequency.value = 240; 
+                
+                bgGainNode.gain.value = 0.15; 
+                
+                oscL.connect(panL); panL.connect(bgGainNode);
+                oscR.connect(panR); panR.connect(bgGainNode);
+                
+                oscL.start(); oscR.start();
+                bgAudioNodes.push(oscL, oscR);
+            }
+        }
+
+        function stopBackgroundAudio() {
+            bgAudioNodes.forEach(node => { try { node.stop(); } catch(e){} });
+            bgAudioNodes = [];
+            if(bgGainNode) { bgGainNode.disconnect(); bgGainNode = null; }
+        }
+        // --- SLUTT LYDSYSTEM ---
+
+        async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
+        function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
+
+        function generatePauses(numPauses) {
+            if (numPauses === 0) return []; // Retur tom liste hvis blokken har 0 pauser
+            let pauses = []; let attempts = 0;
+            while(pauses.length < numPauses && attempts < 1000) {
+                attempts++;
+                let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60;
+                if(!pauses.some(existing => Math.abs(existing - p) < 45)) pauses.push(p);
+            }
+            return pauses.sort((a, b) => b - a);
+        }
+
+        function formatTime(seconds) {
+            let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            let s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateUI() {
+            if (isUserPaused) {
+                document.getElementById('status-text').innerText = "Satt på pause";
+                document.body.classList.add('paused');
+                document.body.classList.remove('frozen');
+                return;
+            }
+            document.body.classList.remove('paused');
+            
+            if(isFrozen) {
+                document.getElementById('timer-display').innerText = `00:${pauseTimeLeft.toString().padStart(2, '0')}`;
+                document.getElementById('status-text').innerText = "SLIPP PENNEN!";
+                document.body.classList.add('frozen');
+            } else {
+                document.getElementById('timer-display').innerText = formatTime(activeTimeLeft);
+                document.getElementById('status-text').innerText = "Tegn!";
+                document.body.classList.remove('frozen');
+            }
+        }
+
+        function triggerEmergency() {
+            if(isEmergencyMode) return;
+            isEmergencyMode = true;
+            playEmergencySound();
+            document.body.classList.remove('twist-active'); document.body.classList.add('emergency-mode');
+            document.getElementById('twist-alert').style.display = "none";
+            document.getElementById('emergency-btn').style.display = "none";
+            document.getElementById('reference-image-container').style.display = "none";
+            document.getElementById('block-name').innerText = "Kognitiv Cool-Down";
+            const randomTask = emergencyTasks[Math.floor(Math.random() * emergencyTasks.length)];
+            document.getElementById('block-info-display').innerHTML = `<strong>Nødbrems aktivert:</strong><br><br>${randomTask}`;
+        }
+
+        // Funksjon for å trekke tilfeldig bilde fra din egen liste
+        function changeImage() { 
+            if (myImages && myImages.length > 0) {
+                const randomIndex = Math.floor(Math.random() * myImages.length);
+                document.getElementById('reference-image').src = myImages[randomIndex]; 
+            } else {
+                // Fallback hvis listen skulle være tom
+                document.getElementById('reference-image').src = `https://picsum.photos/600/400?random=${Date.now()}`;
+            }
+        }
+
+        function startBlock(block) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+
+            requestWakeLock();
+            document.getElementById('block-name').innerText = block.title;
+            document.getElementById('block-info-display').innerText = `${block.desc}`;
+            
+            updateBackgroundAudio();
+            
+            const imgContainer = document.getElementById('reference-image-container');
+            const imgEl = document.getElementById('reference-image');
+            imgEl.classList.remove('upside-down'); 
+            
+            if (block.usePhoto) { imgContainer.style.display = "block"; changeImage(); } 
+            else { imgContainer.style.display = "none"; imgEl.src = ""; }
+
+            const twistAlert = document.getElementById('twist-alert');
+            if (Math.random() < TWIST_CHANCE) {
+                document.body.classList.add('twist-active');
+                twistAlert.style.display = "block";
+                twistAlert.innerHTML = `⚠️ <strong>EKSTRA UTFORDRING: ${block.twistName}</strong><br>${block.twistDesc}`;
+                if(block.twistName === 'Omvendt referanse') imgEl.classList.add('upside-down');
+                setTimeout(() => playTwistSound(), 100);
+            } else {
+                document.body.classList.remove('twist-active'); twistAlert.style.display = "none";
+            }
+            
+            document.getElementById('menu-container').style.display = "none";
+            document.getElementById('timer-container').style.display = "flex";
+            document.getElementById('reward-display').innerText = "";
+            document.getElementById('emergency-btn').style.display = "block";
+            
+            activeTimeLeft = ACTIVE_TIME_SEC; pauseTimeLeft = PAUSE_TIME_SEC;
+            isFrozen = false; isUserPaused = false; isEmergencyMode = false;
+            pauseTriggers = generatePauses(block.pauses);
+            
+            updateUI();
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        function togglePause() {
+            isUserPaused = !isUserPaused;
+            let pauseBtn = document.getElementById('pause-btn');
+            
+            if (isUserPaused) {
+                clearInterval(timerInterval);
+                releaseWakeLock();
+                if(audioCtx.state === 'running') audioCtx.suspend();
+                pauseBtn.innerText = "Gjenoppta"; pauseBtn.style.backgroundColor = "var(--accent-color)";
+            } else {
+                requestWakeLock();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                pauseBtn.innerText = "Pause"; pauseBtn.style.backgroundColor = "var(--pause-color)";
+                timerInterval = setInterval(tick, 1000);
+            }
+            updateUI();
+        }
+
+        function resetAppUI() {
+            clearInterval(timerInterval);
+            releaseWakeLock();
+            stopBackgroundAudio();
+            document.body.classList.remove('frozen', 'paused', 'twist-active', 'emergency-mode');
+            isEmergencyMode = false;
+            document.getElementById('reference-image-container').style.display = "none";
+            document.getElementById('twist-alert').style.display = "none";
+            document.getElementById('timer-container').style.display = "none";
+            document.getElementById('menu-container').style.display = "flex";
+            
+            document.getElementById('audio-select').value = "none";
+            
+            let pauseBtn = document.getElementById('pause-btn');
+            pauseBtn.innerText = "Pause"; pauseBtn.style.backgroundColor = "var(--pause-color)";
+        }
+
+        function cancelBlock() { resetAppUI(); }
+        
+        function finishBlock() {
+            resetAppUI(); 
+            playFanfare();
+
+            const rand = Math.random();
+            const rewardDisplay = document.getElementById('reward-display');
+            
+            if(rand <= 0.01) { 
+                rewardDisplay.innerText = "🏆 DU VANT EN STOR PREMIE! 🏆"; 
+                rewardDisplay.className = "reward-big"; 
+            } else if(rand <= 0.21) { 
+                rewardDisplay.innerText = "🎉 DU VANT EN LITEN PREMIE! 🎉"; 
+                rewardDisplay.className = "reward-small"; 
+            } else { 
+                rewardDisplay.innerText = "Økten er ferdig! Godt jobbet."; 
+                rewardDisplay.className = "reward-none"; 
+            }
+        }
+
+        function tick() {
+            if(isFrozen) {
+                pauseTimeLeft--;
+                if(pauseTimeLeft <= 0) { isFrozen = false; pauseTimeLeft = PAUSE_TIME_SEC; playStartSound(); }
+            } else {
+                activeTimeLeft--;
+                if(pauseTriggers.length > 0 && activeTimeLeft === pauseTriggers[0]) {
+                    pauseTriggers.shift(); isFrozen = true; playStopSound();
+                } else if(activeTimeLeft <= 0) { finishBlock(); }
+            }
+            updateUI();
+        }
+    </script>
+</body>
+</html>
