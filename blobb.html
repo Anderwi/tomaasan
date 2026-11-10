@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#121212">
     <link rel="apple-touch-icon" href="https://picsum.photos/192/192?random=1">
     <link rel="manifest" href="manifest.json">
-    <title>Nevro-Tegning (102 min)</title>
+    <title>Nevro-Tegning</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -18,10 +18,6 @@
             --frozen-color: #cf6679;
             --pause-color: #ffb74d;
             --gold-color: #ffd700;
-            --twist-bg: #2d1318; 
-            --twist-accent: #ff5252;
-            --emergency-bg: #0d1b2a; 
-            --emergency-accent: #77aaff;
         }
         body {
             background-color: var(--bg-color);
@@ -85,11 +81,7 @@
         #block-info-display { font-size: 0.95rem; color: #aaa; text-align: center; margin-bottom: 10px; line-height: 1.4; }
 
         #reference-image-container { display: none; position: relative; width: 100%; height: 250px; margin: 10px 0; border-radius: 8px; overflow: hidden; border: 2px solid #444; background-color: #000; cursor: pointer; }
-        #reference-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-        .upside-down { transform: rotate(180deg); }
-        
-        #twist-alert { display: none; background-color: rgba(255, 82, 82, 0.15); border: 2px solid var(--twist-accent); color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; animation: pulse 2s infinite; font-size: 0.9rem; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); } }
+        #reference-image { width: 100%; height: 100%; object-fit: cover; }
 
         #timer-display { font-size: 5rem; font-weight: bold; margin: 10px 0; font-variant-numeric: tabular-nums; }
         #status-text { font-size: 1.5rem; height: 2rem; margin-bottom: 20px; font-weight: 300; text-align: center; }
@@ -113,17 +105,11 @@
         .controls { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; justify-content: center; }
         .control-btn { border: none; padding: 12px 20px; font-size: 1rem; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex: 1 1 30%; min-width: 100px; }
         #pause-btn { background-color: var(--pause-color); color: #000; }
-        #emergency-btn { background-color: transparent; color: var(--emergency-accent); border: 1px solid var(--emergency-accent); box-shadow: none; }
         #cancel-btn { background-color: transparent; color: #888; border: 1px solid #555; box-shadow: none; }
 
         .frozen { background-color: #2c1a1d !important; }
         .frozen #status-text { color: var(--frozen-color); font-weight: bold; }
         .paused { background-color: #1f1b13 !important; }
-        body.twist-active { background-color: var(--twist-bg); }
-        body.twist-active #block-name { color: var(--twist-accent); }
-        body.emergency-mode { background-color: var(--emergency-bg) !important; }
-        body.emergency-mode #block-name { color: var(--emergency-accent) !important; }
-        body.emergency-mode #block-info-display { color: #fff; }
         
         #reward-display { font-size: 1.3rem; height: 3rem; margin-top: 30px; text-align: center; font-weight: bold; }
         .reward-none { color: #888; }
@@ -148,7 +134,7 @@
 <body>
 
     <div id="menu-container">
-        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 15px;">Dagens Økter (102 min)</h2>
+        <h2 style="text-align: center; color: var(--accent-color); margin-bottom: 15px;">Dagens Økter</h2>
         <div id="menu-buttons"></div>
         <div id="reward-display"></div>
     </div>
@@ -159,7 +145,6 @@
         <div id="reference-image-container" onclick="changeImage()">
             <img id="reference-image" src="" alt="Fotoreferanse">
         </div>
-        <div id="twist-alert"></div>
         <div id="timer-display">17:00</div>
         <div id="status-text">Klar til start</div>
         
@@ -173,27 +158,24 @@
 
         <div class="controls">
             <button id="pause-btn" class="control-btn" onclick="togglePause()">Pause</button>
-            <button id="emergency-btn" class="control-btn" onclick="triggerEmergency()">Nødbrems</button>
             <button id="cancel-btn" class="control-btn" onclick="cancelBlock()">Avbryt</button>
         </div>
     </div>
 
     <script>
-        const ACTIVE_TIME_SEC = 17 * 60; 
         const PAUSE_TIME_SEC = 10;
-        const TWIST_CHANCE = 0.05; 
         
         // OPPDATERT BLOKK-KONFIGURASJON
         const blocksConfig = [
-            { id: 1, title: 'Blokk 1: Primitive volumer', desc: 'Tegn primitive volumer fra eget hode med "røntgensyn" for å bygge 3D-forståelse.', pauses: 6, twistName: 'Blekkgrensen', twistDesc: 'Maks 10 streker per form.', usePhoto: false },
-            { id: 2, title: 'Blokk 2: Figurer i perspektiv', desc: 'Sett sammen enkle figurer fra eget hode i et perspektiv. Vri på figurene for å teste kontraksjonene. Tilpass kompleksitet etter dagsform.', pauses: 6, twistName: 'Continuous Line', twistDesc: 'Ikke løft pennen fra arket!', usePhoto: false },
-            { id: 3, title: 'Blokk 3: Kopiere fra referanse', desc: 'Kopier objekter og landskap i forenklede former fra referansebildet.', pauses: 6, twistName: 'Omvendt referanse', twistDesc: 'Tegn referansen opp-ned!', usePhoto: true },
-            { id: 4, title: 'Blokk 4: Komponere & utvikle', desc: 'Fritt arbeid! Komponer og videreutvikle egne ideer du har.', pauses: 0, twistName: 'Blekkgrensen', twistDesc: 'Ikke bruk viskelær, eie feilene dine.', usePhoto: false },
-            { id: 5, title: 'Blokk 5: Repetere & finpusse', desc: 'Repeter og finpuss en bestemt idé du har valgt å jobbe videre med.', pauses: 6, twistName: 'Skuldergrepet', twistDesc: 'Hold pennen ytterst på skaftet.', usePhoto: false },
-            { id: 6, title: 'Blokk 6: Frie oppgaver', desc: 'Frie oppgaver som du bestemmer helt selv. Nyt flytsonen!', pauses: 0, twistName: 'Continuous Line', twistDesc: 'La streken vandre uten å løfte pennen for ofte.', usePhoto: false }
+            { id: 1, title: 'Blokk 1: Primitive volumer', desc: 'Tegn primitive volumer fra eget hode med "røntgensyn" for å bygge 3D-forståelse.', duration: 17 * 60, pauses: 6, usePhoto: false },
+            { id: 2, title: 'Blokk 2: Figurer i perspektiv', desc: 'Sett sammen enkle figurer fra eget hode i et perspektiv. Vri på figurene for å teste konstruksjonene. Tilpass kompleksitet etter dagsform.', duration: 17 * 60, pauses: 6, usePhoto: false },
+            { id: 3, title: 'Blokk 3: Kopiere fra referanse', desc: 'Kopier objekter og landskap i forenklede former fra referansebildet.', duration: 17 * 60, pauses: 6, usePhoto: true },
+            { id: 4, title: 'Blokk 4: Planlegge motiv til neste dag eller utfør planlagt motiv fra i går', desc: '', duration: 18 * 60, pauses: 0, usePhoto: false },
+            { id: 5, title: 'Blokk 5: Planlegge motiv til neste dag eller utfør planlagt motiv fra i går', desc: '', duration: 18 * 60, pauses: 0, usePhoto: false },
+            { id: 6, title: 'Blokk 6: Planlegge motiv til neste dag eller utfør planlagt motiv fra i går', desc: '', duration: 18 * 60, pauses: 0, usePhoto: false }
         ];
 
-        // EGEN BILDELISTE FOR BLOKK 3 (Lim inn egne lenker her)
+        // EGEN BILDELISTE FOR BLOKK 3
         const myImages = [
             "https://media.snl.no/media/135149/standard_elg_ku_kul.png",
             "https://media.snl.no/media/48623/standard_compressed_elg.jpg",
@@ -203,17 +185,10 @@
             "https://images.unsplash.com/photo-1506744626753-1fa44df14c28?q=80&w=1000"
         ];
 
-        const emergencyTasks = [
-            "GHOSTING: Utfør bevegelsen i luften 3-4 ganger over arket før pennen treffer.",
-            "PUNKT-TIL-PUNKT: Sett to små prikker, forbind dem rolig og selvsikkert.",
-            "STORE FORMER: Tegn dobbelt så stort for å tvinge frem bruk av skuldermuskelen."
-        ];
-        
-        let activeTimeLeft = ACTIVE_TIME_SEC;
+        let activeTimeLeft = 0;
         let pauseTimeLeft = PAUSE_TIME_SEC;
         let isFrozen = false;
         let isUserPaused = false;
-        let isEmergencyMode = false;
         let timerInterval = null;
         let pauseTriggers = [];
         let wakeLock = null;
@@ -227,7 +202,10 @@
             const btn = document.createElement('button');
             btn.className = 'block-btn';
             btn.onclick = () => startBlock(block);
-            btn.innerHTML = `<div class="btn-title">${block.title}</div><div class="btn-desc">${block.desc}</div><div class="btn-pauses">⏱️ ${block.pauses} pauser ${block.usePhoto ? '🖼️ m/ foto' : ''}</div>`;
+            const timeMin = block.duration / 60;
+            btn.innerHTML = `<div class="btn-title">${block.title}</div>
+                             ${block.desc ? `<div class="btn-desc">${block.desc}</div>` : ''}
+                             <div class="btn-pauses">⏱️ ${timeMin} min | ${block.pauses} pauser ${block.usePhoto ? '🖼️ m/ foto' : ''}</div>`;
             menuDiv.appendChild(btn);
         });
 
@@ -250,8 +228,6 @@
 
         function playStopSound() { playTone(800, 'square', 0.3, 0.1); }
         function playStartSound() { playTone(400, 'sine', 0.2, 0.1); setTimeout(() => playTone(600, 'sine', 0.4, 0.1), 150); }
-        function playTwistSound() { playTone(300, 'sawtooth', 0.3, 0.15); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.15), 300); }
-        function playEmergencySound() { playTone(200, 'sine', 0.8, 0.1); }
         
         function playFanfare() {
             if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -354,12 +330,12 @@
         async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
         function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
-        function generatePauses(numPauses) {
-            if (numPauses === 0) return []; // Retur tom liste hvis blokken har 0 pauser
+        function generatePauses(numPauses, totalTime) {
+            if (numPauses === 0) return []; 
             let pauses = []; let attempts = 0;
             while(pauses.length < numPauses && attempts < 1000) {
                 attempts++;
-                let p = Math.floor(Math.random() * (ACTIVE_TIME_SEC - 120)) + 60;
+                let p = Math.floor(Math.random() * (totalTime - 120)) + 60;
                 if(!pauses.some(existing => Math.abs(existing - p) < 45)) pauses.push(p);
             }
             return pauses.sort((a, b) => b - a);
@@ -391,26 +367,12 @@
             }
         }
 
-        function triggerEmergency() {
-            if(isEmergencyMode) return;
-            isEmergencyMode = true;
-            playEmergencySound();
-            document.body.classList.remove('twist-active'); document.body.classList.add('emergency-mode');
-            document.getElementById('twist-alert').style.display = "none";
-            document.getElementById('emergency-btn').style.display = "none";
-            document.getElementById('reference-image-container').style.display = "none";
-            document.getElementById('block-name').innerText = "Kognitiv Cool-Down";
-            const randomTask = emergencyTasks[Math.floor(Math.random() * emergencyTasks.length)];
-            document.getElementById('block-info-display').innerHTML = `<strong>Nødbrems aktivert:</strong><br><br>${randomTask}`;
-        }
-
         // Funksjon for å trekke tilfeldig bilde fra din egen liste
         function changeImage() { 
             if (myImages && myImages.length > 0) {
                 const randomIndex = Math.floor(Math.random() * myImages.length);
                 document.getElementById('reference-image').src = myImages[randomIndex]; 
             } else {
-                // Fallback hvis listen skulle være tom
                 document.getElementById('reference-image').src = `https://picsum.photos/600/400?random=${Date.now()}`;
             }
         }
@@ -426,30 +388,19 @@
             
             const imgContainer = document.getElementById('reference-image-container');
             const imgEl = document.getElementById('reference-image');
-            imgEl.classList.remove('upside-down'); 
             
             if (block.usePhoto) { imgContainer.style.display = "block"; changeImage(); } 
             else { imgContainer.style.display = "none"; imgEl.src = ""; }
-
-            const twistAlert = document.getElementById('twist-alert');
-            if (Math.random() < TWIST_CHANCE) {
-                document.body.classList.add('twist-active');
-                twistAlert.style.display = "block";
-                twistAlert.innerHTML = `⚠️ <strong>EKSTRA UTFORDRING: ${block.twistName}</strong><br>${block.twistDesc}`;
-                if(block.twistName === 'Omvendt referanse') imgEl.classList.add('upside-down');
-                setTimeout(() => playTwistSound(), 100);
-            } else {
-                document.body.classList.remove('twist-active'); twistAlert.style.display = "none";
-            }
             
             document.getElementById('menu-container').style.display = "none";
             document.getElementById('timer-container').style.display = "flex";
             document.getElementById('reward-display').innerText = "";
-            document.getElementById('emergency-btn').style.display = "block";
             
-            activeTimeLeft = ACTIVE_TIME_SEC; pauseTimeLeft = PAUSE_TIME_SEC;
-            isFrozen = false; isUserPaused = false; isEmergencyMode = false;
-            pauseTriggers = generatePauses(block.pauses);
+            activeTimeLeft = block.duration; 
+            pauseTimeLeft = PAUSE_TIME_SEC;
+            isFrozen = false; 
+            isUserPaused = false; 
+            pauseTriggers = generatePauses(block.pauses, block.duration);
             
             updateUI();
             timerInterval = setInterval(tick, 1000);
@@ -477,10 +428,8 @@
             clearInterval(timerInterval);
             releaseWakeLock();
             stopBackgroundAudio();
-            document.body.classList.remove('frozen', 'paused', 'twist-active', 'emergency-mode');
-            isEmergencyMode = false;
+            document.body.classList.remove('frozen', 'paused');
             document.getElementById('reference-image-container').style.display = "none";
-            document.getElementById('twist-alert').style.display = "none";
             document.getElementById('timer-container').style.display = "none";
             document.getElementById('menu-container').style.display = "flex";
             
